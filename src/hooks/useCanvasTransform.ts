@@ -24,6 +24,7 @@ export function useCanvasTransform(initialZoom = 1) {
   const gestureStartRef = useRef<GestureSnapshot | null>(null);
   const isTouchGestureActiveRef = useRef(false);
   const blockTouchDrawingUntilRef = useRef(0);
+  const touchGesturePointerIdsRef = useRef<Set<number>>(new Set());
 
   const blockTouchDrawingBriefly = useCallback(() => {
     blockTouchDrawingUntilRef.current = Date.now() + 240;
@@ -79,6 +80,7 @@ export function useCanvasTransform(initialZoom = 1) {
     blockTouchDrawingUntilRef.current = 0;
     gestureStartRef.current = null;
     touchPointersRef.current.clear();
+    touchGesturePointerIdsRef.current.clear();
   }, [initialZoom, setTouchGestureActive]);
 
   const handleWheel = useCallback(
@@ -126,6 +128,12 @@ export function useCanvasTransform(initialZoom = 1) {
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>, containerRect?: DOMRect) => {
       if (event.pointerType === "touch") {
+        if (event.isPrimary && !isTouchGestureActiveRef.current) {
+          touchPointersRef.current.clear();
+          touchGesturePointerIdsRef.current.clear();
+          gestureStartRef.current = null;
+        }
+
         touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
         const gesture = getTouchGesture();
@@ -139,6 +147,7 @@ export function useCanvasTransform(initialZoom = 1) {
             panY,
             zoom,
           };
+          touchGesturePointerIdsRef.current = new Set(touchPointersRef.current.keys());
           setIsPanning(true);
           setTouchGestureActive(true);
           event.preventDefault();
@@ -166,7 +175,7 @@ export function useCanvasTransform(initialZoom = 1) {
         const gesture = getTouchGesture();
         const start = gestureStartRef.current;
 
-        if (gesture && start) {
+        if (gesture && start && touchGesturePointerIdsRef.current.size >= 2) {
           const rect = containerRect ?? event.currentTarget.getBoundingClientRect();
           const focus = getGestureFocus(gesture.center, rect);
           const ratio = gesture.distance / Math.max(1, start.distance);
@@ -202,6 +211,7 @@ export function useCanvasTransform(initialZoom = 1) {
       touchPointersRef.current.delete(event.pointerId);
       if (touchPointersRef.current.size < 2) {
         gestureStartRef.current = null;
+        touchGesturePointerIdsRef.current.clear();
         setIsPanning(false);
         setTouchGestureActive(false);
         blockTouchDrawingBriefly();
