@@ -11,9 +11,19 @@ type MainCanvasProps = {
   onionSkinEnabled: boolean;
 };
 
+type PendingTouchDraw = {
+  button: number;
+  clientX: number;
+  clientY: number;
+  pointerId: number;
+  shiftKey: boolean;
+};
+
 export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pendingTouchDrawRef = useRef<PendingTouchDraw | null>(null);
+  const touchDrawingStartedRef = useRef(false);
   const maxDisplaySize = 512;
   const pixelSize = maxDisplaySize / Math.max(canvas.width, canvas.height);
   const displayWidth = Math.max(1, Math.round(canvas.width * pixelSize));
@@ -162,6 +172,33 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
 
   const getContainerRect = () => containerRef.current?.getBoundingClientRect();
 
+  const toCanvasPointerEvent = (
+    event: PendingTouchDraw | React.PointerEvent<HTMLCanvasElement>,
+  ) =>
+    ({
+      button: event.button,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      currentTarget: canvasRef.current,
+      pointerId: event.pointerId,
+      shiftKey: event.shiftKey,
+    } as unknown as React.PointerEvent<HTMLCanvasElement>);
+
+  const cancelPendingTouchDraw = () => {
+    pendingTouchDrawRef.current = null;
+    touchDrawingStartedRef.current = false;
+  };
+
+  const startPendingTouchDraw = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!pendingTouchDrawRef.current || touchDrawingStartedRef.current || !canvasRef.current) {
+      return;
+    }
+
+    canvas.handlePointerDown(toCanvasPointerEvent(pendingTouchDrawRef.current));
+    touchDrawingStartedRef.current = true;
+    canvas.handlePointerMove(event);
+  };
+
   const blockCanvasTouchEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType !== "touch") {
       return false;
@@ -173,6 +210,7 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       return false;
     }
 
+    cancelPendingTouchDraw();
     canvas.handlePointerUp(event);
     event.preventDefault();
     event.stopPropagation();
@@ -184,32 +222,56 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       return;
     }
 
-    canvas.handlePointerDown(event);
     if (event.pointerType === "touch") {
+      pendingTouchDrawRef.current = {
+        button: event.button,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        pointerId: event.pointerId,
+        shiftKey: event.shiftKey,
+      };
+      touchDrawingStartedRef.current = false;
       event.preventDefault();
       event.stopPropagation();
+      return;
     }
+
+    canvas.handlePointerDown(event);
   };
 
   const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType === "touch" && transform.shouldBlockTouchDrawing()) {
       transform.handlePointerMove(toTransformEvent(event), getContainerRect());
+      cancelPendingTouchDraw();
       canvas.handlePointerUp(event);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    if (event.pointerType === "touch") {
+      const pending = pendingTouchDrawRef.current;
+      if (pending && pending.pointerId === event.pointerId && !touchDrawingStartedRef.current) {
+        const distance = Math.hypot(event.clientX - pending.clientX, event.clientY - pending.clientY);
+        if (distance >= 4) {
+          startPendingTouchDraw(event);
+        }
+      } else if (touchDrawingStartedRef.current) {
+        canvas.handlePointerMove(event);
+      }
+
       event.preventDefault();
       event.stopPropagation();
       return;
     }
 
     canvas.handlePointerMove(event);
-    if (event.pointerType === "touch") {
-      event.preventDefault();
-      event.stopPropagation();
-    }
   };
 
   const handleCanvasPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType === "touch" && transform.shouldBlockTouchDrawing()) {
       transform.handlePointerUp(toTransformEvent(event));
+      cancelPendingTouchDraw();
       canvas.handlePointerUp(event);
       event.preventDefault();
       event.stopPropagation();
@@ -218,12 +280,17 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
 
     if (event.pointerType === "touch") {
       transform.handlePointerUp(toTransformEvent(event));
-    }
-    canvas.handlePointerUp(event);
-    if (event.pointerType === "touch") {
+      if (pendingTouchDrawRef.current && pendingTouchDrawRef.current.pointerId === event.pointerId && !touchDrawingStartedRef.current) {
+        canvas.handlePointerDown(toCanvasPointerEvent(pendingTouchDrawRef.current));
+      }
+      canvas.handlePointerUp(event);
+      cancelPendingTouchDraw();
       event.preventDefault();
       event.stopPropagation();
+      return;
     }
+
+    canvas.handlePointerUp(event);
   };
 
   const isTransforming = transform.isSpacePressed || transform.isPanning || transform.isTouchGestureActive;
