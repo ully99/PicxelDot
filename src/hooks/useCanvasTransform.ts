@@ -3,6 +3,7 @@
 type Point = { x: number; y: number };
 type GestureSnapshot = {
   center: Point;
+  focus: Point;
   distance: number;
   panX: number;
   panY: number;
@@ -117,16 +118,23 @@ export function useCanvasTransform(initialZoom = 1) {
     return { center, distance };
   };
 
+  const getGestureFocus = (center: Point, rect: DOMRect) => ({
+    x: center.x - rect.left - rect.width / 2,
+    y: center.y - rect.top - rect.height / 2,
+  });
+
   const handlePointerDown = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
+    (event: PointerEvent<HTMLDivElement>, containerRect?: DOMRect) => {
       if (event.pointerType === "touch") {
         touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
         const gesture = getTouchGesture();
         if (gesture) {
+          const rect = containerRect ?? event.currentTarget.getBoundingClientRect();
           event.currentTarget.setPointerCapture(event.pointerId);
           gestureStartRef.current = {
             ...gesture,
+            focus: getGestureFocus(gesture.center, rect),
             panX,
             panY,
             zoom,
@@ -152,18 +160,23 @@ export function useCanvasTransform(initialZoom = 1) {
   );
 
   const handlePointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
+    (event: PointerEvent<HTMLDivElement>, containerRect?: DOMRect) => {
       if (event.pointerType === "touch" && touchPointersRef.current.has(event.pointerId)) {
         touchPointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const gesture = getTouchGesture();
         const start = gestureStartRef.current;
 
         if (gesture && start) {
+          const rect = containerRect ?? event.currentTarget.getBoundingClientRect();
+          const focus = getGestureFocus(gesture.center, rect);
           const ratio = gesture.distance / Math.max(1, start.distance);
           const nextZoom = Math.max(0.1, Math.min(64, start.zoom * ratio));
+          const startContentX = (start.focus.x - start.panX) / start.zoom;
+          const startContentY = (start.focus.y - start.panY) / start.zoom;
+
           setZoom(nextZoom);
-          setPanX(start.panX + gesture.center.x - start.center.x);
-          setPanY(start.panY + gesture.center.y - start.center.y);
+          setPanX(focus.x - startContentX * nextZoom);
+          setPanY(focus.y - startContentY * nextZoom);
           event.preventDefault();
           event.stopPropagation();
         }

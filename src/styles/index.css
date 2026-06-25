@@ -29,10 +29,23 @@ button {
   font: inherit;
 }
 
+.app-shell,
+.editor-shell,
+.editor-shell * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 canvas,
 .pixelated {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  user-select: none;
 }
 
 .pixel-grid {

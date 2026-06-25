@@ -160,14 +160,14 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
   const toTransformEvent = (event: React.PointerEvent<HTMLCanvasElement>) =>
     event as unknown as React.PointerEvent<HTMLDivElement>;
 
+  const getContainerRect = () => containerRef.current?.getBoundingClientRect();
+
   const blockCanvasTouchEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType !== "touch") {
       return false;
     }
 
-    if (!event.isPrimary) {
-      transform.handlePointerDown(toTransformEvent(event));
-    }
+    transform.handlePointerDown(toTransformEvent(event), getContainerRect());
 
     if (!transform.shouldBlockTouchDrawing()) {
       return false;
@@ -184,11 +184,15 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
     }
 
     canvas.handlePointerDown(event);
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   };
 
   const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.pointerType === "touch" && transform.shouldBlockTouchDrawing()) {
-      transform.handlePointerMove(toTransformEvent(event));
+      transform.handlePointerMove(toTransformEvent(event), getContainerRect());
       canvas.handlePointerUp(event);
       event.preventDefault();
       event.stopPropagation();
@@ -196,6 +200,10 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
     }
 
     canvas.handlePointerMove(event);
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   };
 
   const handleCanvasPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -207,7 +215,14 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       return;
     }
 
+    if (event.pointerType === "touch") {
+      transform.handlePointerUp(toTransformEvent(event));
+    }
     canvas.handlePointerUp(event);
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   };
 
   const isTransforming = transform.isSpacePressed || transform.isPanning || transform.isTouchGestureActive;
@@ -250,6 +265,9 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       onPointerMove={transform.handlePointerMove}
       onPointerCancel={transform.handlePointerUp}
       onPointerUp={transform.handlePointerUp}
+      onContextMenu={(event) => event.preventDefault()}
+      onSelect={(event) => event.preventDefault()}
+      onSelectCapture={(event) => event.preventDefault()}
     >
       <div className="absolute inset-0 pixel-grid opacity-40 pointer-events-none" />
 
@@ -328,12 +346,16 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
 
       {/* Zoom / Pan container wrapper */}
       <div
-        className="absolute flex items-center justify-center transition-transform duration-75 ease-out"
+        className={`absolute flex items-center justify-center ${
+          isTransforming ? "" : "transition-transform duration-75 ease-out"
+        }`}
         style={{
           transform: `translate(calc(-50% + ${transform.panX}px), calc(-50% + ${transform.panY}px)) scale(${transform.zoom})`,
           transformOrigin: "center",
+          backfaceVisibility: "hidden",
           left: "50%",
           top: "50%",
+          willChange: "transform",
           aspectRatio: `${canvas.width} / ${canvas.height}`,
           ...(isWideCanvas
             ? { width: "min(calc(100% - 24px), 544px)" }
