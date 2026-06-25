@@ -173,6 +173,7 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       return false;
     }
 
+    canvas.handlePointerUp(event);
     event.preventDefault();
     event.stopPropagation();
     return true;

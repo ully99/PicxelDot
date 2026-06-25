@@ -23,23 +23,12 @@ export function useCanvasTransform(initialZoom = 1) {
   const touchPointersRef = useRef(new Map<number, Point>());
   const gestureStartRef = useRef<GestureSnapshot | null>(null);
   const isTouchGestureActiveRef = useRef(false);
-  const blockTouchDrawingUntilRef = useRef(0);
   const touchGesturePointerIdsRef = useRef<Set<number>>(new Set());
 
-  const blockTouchDrawingBriefly = useCallback(() => {
-    blockTouchDrawingUntilRef.current = Date.now() + 240;
+  const setTouchGestureActive = useCallback((active: boolean) => {
+    isTouchGestureActiveRef.current = active;
+    setIsTouchGestureActive(active);
   }, []);
-
-  const setTouchGestureActive = useCallback(
-    (active: boolean) => {
-      isTouchGestureActiveRef.current = active;
-      setIsTouchGestureActive(active);
-      if (active) {
-        blockTouchDrawingBriefly();
-      }
-    },
-    [blockTouchDrawingBriefly],
-  );
 
   useEffect(() => {
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -77,7 +66,6 @@ export function useCanvasTransform(initialZoom = 1) {
     setPanY(0);
     setIsPanning(false);
     setTouchGestureActive(false);
-    blockTouchDrawingUntilRef.current = 0;
     gestureStartRef.current = null;
     touchPointersRef.current.clear();
     touchGesturePointerIdsRef.current.clear();
@@ -214,7 +202,6 @@ export function useCanvasTransform(initialZoom = 1) {
         touchGesturePointerIdsRef.current.clear();
         setIsPanning(false);
         setTouchGestureActive(false);
-        blockTouchDrawingBriefly();
       }
       return;
     }
@@ -227,14 +214,10 @@ export function useCanvasTransform(initialZoom = 1) {
       startPanRef.current = null;
       event.stopPropagation();
     }
-  }, [blockTouchDrawingBriefly, isPanning, setTouchGestureActive]);
+  }, [isPanning, setTouchGestureActive]);
 
   const shouldBlockTouchDrawing = useCallback(() => {
-    return (
-      isTouchGestureActiveRef.current ||
-      touchPointersRef.current.size >= 2 ||
-      Date.now() < blockTouchDrawingUntilRef.current
-    );
+    return isTouchGestureActiveRef.current || touchPointersRef.current.size >= 2;
   }, []);
 
   return {
