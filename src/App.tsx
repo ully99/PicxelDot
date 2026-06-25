@@ -65,23 +65,24 @@ function EditorApp({
   } | null>(null);
   const longPressRef = useRef<number | null>(null);
   const previewSeededRef = useRef(false);
-  const [recentColors, setRecentColors] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem("dot-maker-recent-colors");
-      return saved ? JSON.parse(saved) : ["#ffec27", "#1d2b53", "#ff004d", "#00e436", "#29adff", "#ffffff"];
-    } catch (e) {
-      return ["#ffec27", "#1d2b53", "#ff004d", "#00e436", "#29adff", "#ffffff"];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dot-maker-recent-colors");
-      if (saved) {
-        setRecentColors(JSON.parse(saved));
-      }
-    } catch (e) {}
-  }, [pixelCanvas.foreground, pixelCanvas.background, isMobilePaletteOpen]);
+  const [mobilePaletteColors, setMobilePaletteColors] = useState<string[]>([
+    "#000000",
+    "#1d2b53",
+    "#7e2553",
+    "#008751",
+    "#ab5236",
+    "#5f574f",
+    "#c2c3c7",
+    "#fff1e8",
+    "#ff004d",
+    "#ffa300",
+    "#ffec27",
+    "#00e436",
+    "#29adff",
+    "#83769c",
+    "#ff77a8",
+    "#ffccaa",
+  ]);
 
   useEffect(() => {
     return () => {
@@ -192,6 +193,7 @@ function EditorApp({
             background={pixelCanvas.background}
             foreground={pixelCanvas.foreground}
             onCollapse={() => setIsPcPaletteCollapsed(true)}
+            onCurrentPaletteChange={setMobilePaletteColors}
             onSelectBackground={pixelCanvas.setBackground}
             onSelectForeground={pixelCanvas.setForeground}
             isMobileOpen={isMobilePaletteOpen}
@@ -208,7 +210,7 @@ function EditorApp({
           <div className="flex shrink-0 select-none flex-col gap-1.5 border-t border-zinc-950 bg-zinc-900 p-1.5 text-xs md:hidden">
             <div className="flex items-center gap-2">
               <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-0.5 [touch-action:pan-x]">
-                {recentColors.map((color) => (
+                {mobilePaletteColors.map((color) => (
                   <button
                     key={color}
                     onClick={() => pixelCanvas.setForeground(color)}

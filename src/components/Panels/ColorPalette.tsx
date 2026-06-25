@@ -60,6 +60,7 @@ type ColorPaletteProps = {
   background: string;
   foreground: string;
   onCollapse?: () => void;
+  onCurrentPaletteChange?: (colors: string[]) => void;
   onSelectBackground: (color: string) => void;
   onSelectForeground: (color: string) => void;
   isMobileOpen?: boolean;
@@ -77,6 +78,7 @@ export function ColorPalette({
   background,
   foreground,
   onCollapse,
+  onCurrentPaletteChange,
   onSelectBackground,
   onSelectForeground,
   isMobileOpen = false,
@@ -118,6 +120,10 @@ export function ColorPalette({
 
     localStorage.setItem(STORAGE_KEYS.selectedPalette, selectedPalette);
   }, [palettes, selectedPalette]);
+
+  useEffect(() => {
+    onCurrentPaletteChange?.(currentPalette);
+  }, [currentPalette, onCurrentPaletteChange]);
 
   useEffect(() => {
     setHexInput(activeHex);
