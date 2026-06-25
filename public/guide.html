@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A practical guide for using MAKE PIXEL DOT to draw pixel art, manage palettes, build sprite animations, and export PNG, GIF, spritesheet, and project files.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://makepixeldot.com/guide.html">
+  <title>Pixel Art Editor Guide & FAQ - MAKE PIXEL DOT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-5xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl sm:p-8">
+    <header class="mb-8 border-b border-zinc-800 pb-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/" class="text-lg font-bold uppercase tracking-widest text-amber-400 transition-colors hover:text-amber-300">
+          MAKE PIXEL DOT
+        </a>
+        <div class="inline-flex h-8 items-center border border-zinc-800 bg-zinc-950 text-xs font-black">
+          <button class="h-full px-3" data-language-button="en" type="button">EN</button>
+          <button class="h-full px-3" data-language-button="ko" type="button">KO</button>
+        </div>
+      </div>
+      <div data-lang="en">
+        <p class="mt-6 text-sm text-zinc-500">Updated: June 25, 2026</p>
+        <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-white">Pixel Art Editor Guide & FAQ</h1>
+        <p class="mt-3 max-w-3xl text-zinc-400">
+          MAKE PIXEL DOT is a browser-based editor for drawing pixel art, game sprites, icons, tiles, and small frame animations.
+          This guide explains the main workflow from a blank canvas to exported artwork.
+        </p>
+      </div>
+      <div data-lang="ko">
+        <p class="mt-6 text-sm text-zinc-500">업데이트: 2026년 6월 25일</p>
+        <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-white">픽셀 아트 에디터 가이드 & FAQ</h1>
+        <p class="mt-3 max-w-3xl text-zinc-400">
+          MAKE PIXEL DOT은 픽셀 아트, 게임 스프라이트, 아이콘, 타일, 작은 프레임 애니메이션을 브라우저에서 만들 수 있는 에디터입니다.
+          이 가이드는 빈 캔버스에서 시작해 작업물을 내보내기까지의 핵심 흐름을 설명합니다.
+        </p>
+      </div>
+    </header>
+
+    <nav data-lang="en" class="mb-8 grid grid-cols-2 gap-2 border border-zinc-800 bg-zinc-950 p-2 text-xs font-semibold sm:grid-cols-3 lg:grid-cols-6">
+      <a href="#start" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Start</a>
+      <a href="#tools" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Tools</a>
+      <a href="#palette" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Palette</a>
+      <a href="#selection" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Selection</a>
+      <a href="#animation" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Animation</a>
+      <a href="#export" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">Export</a>
+    </nav>
+    <nav data-lang="ko" class="mb-8 grid grid-cols-2 gap-2 border border-zinc-800 bg-zinc-950 p-2 text-xs font-semibold sm:grid-cols-3 lg:grid-cols-6">
+      <a href="#ko-start" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">시작</a>
+      <a href="#ko-tools" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">도구</a>
+      <a href="#ko-palette" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">팔레트</a>
+      <a href="#ko-selection" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">선택</a>
+      <a href="#ko-animation" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">애니메이션</a>
+      <a href="#ko-export" class="bg-zinc-800 px-3 py-2 text-zinc-200 hover:bg-zinc-700">내보내기</a>
+    </nav>
+
+    <main data-lang="en" class="space-y-12 text-sm leading-relaxed text-zinc-300">
+      <section id="start" class="scroll-mt-6">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Getting Started</h2>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div class="space-y-4 text-zinc-400">
+            <p>
+              The default canvas is designed for quick sprite work. A 32 x 32 canvas is small enough for icons and characters,
+              but large enough to practice outlines, color blocking, highlights, and shadows.
+            </p>
+            <p>
+              Start by selecting the Pencil tool, choosing a foreground color from the palette, and drawing the main silhouette.
+              Add a new layer for details or effects when you want to keep edits separate. If you are making an animation,
+              add frames gradually and preview movement before polishing every pixel.
+            </p>
+            <p>
+              The editor runs in your browser. Project data is not intentionally uploaded while you draw, so save important work
+              as a <strong class="text-zinc-200">.dotproj</strong> project file and export final images as PNG, GIF, or spritesheet files.
+            </p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-3 font-bold text-white">Recommended first workflow</h3>
+            <ol class="list-decimal space-y-2 pl-5 text-xs text-zinc-400">
+              <li>Create or keep the default 32 x 32 canvas.</li>
+              <li>Block out the large silhouette with the Pencil tool.</li>
+              <li>Use Lighten and Darken to create simple shading.</li>
+              <li>Add a second frame if you want idle or movement animation.</li>
+              <li>Export PNG for still art or GIF for animation previews.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="tools" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Tool Guide</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">Drawing Tools</h3>
+            <ul class="list-disc space-y-1.5 pl-5 text-xs text-zinc-400">
+              <li><strong class="text-zinc-200">Pencil</strong>: Paint individual pixels or drag to draw continuous strokes.</li>
+              <li><strong class="text-zinc-200">Eraser</strong>: Clear pixels back to transparency without changing other pixels.</li>
+              <li><strong class="text-zinc-200">Bucket</strong>: Fill a connected region of the same color or transparent area.</li>
+              <li><strong class="text-zinc-200">Eyedropper</strong>: Pick a color from the canvas into the active color slot.</li>
+            </ul>
+          </article>
+
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">Shape and Shading Tools</h3>
+            <ul class="list-disc space-y-1.5 pl-5 text-xs text-zinc-400">
+              <li><strong class="text-zinc-200">Line</strong>: Drag from a start point to an end point to draw a crisp pixel line.</li>
+              <li><strong class="text-zinc-200">Rectangle</strong>: Draw a rectangular outline for panels, tiles, UI, or props.</li>
+              <li><strong class="text-zinc-200">Ellipse</strong>: Draw circles and oval shapes for effects, coins, heads, and icons.</li>
+              <li><strong class="text-zinc-200">Lighten / Darken</strong>: Adjust painted pixels one step brighter or darker while keeping a pixel-art look.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="palette" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Palette and Color Workflow</h2>
+        <div class="space-y-4 text-zinc-400">
+          <p>
+            Pixel art often works best with a limited palette. Instead of using many similar colors, pick a small set of readable
+            colors for outlines, midtones, highlights, and shadows. This makes sprites easier to recognize at small sizes.
+          </p>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="border border-zinc-800 bg-zinc-950 p-4">
+              <h3 class="mb-2 font-semibold text-white">Foreground</h3>
+              <p class="text-xs text-zinc-400">The main color used by drawing and shape tools.</p>
+            </div>
+            <div class="border border-zinc-800 bg-zinc-950 p-4">
+              <h3 class="mb-2 font-semibold text-white">Background</h3>
+              <p class="text-xs text-zinc-400">A secondary color slot for switching or sampling quickly.</p>
+            </div>
+            <div class="border border-zinc-800 bg-zinc-950 p-4">
+              <h3 class="mb-2 font-semibold text-white">Recent Colors</h3>
+              <p class="text-xs text-zinc-400">Recently used colors stay available for quick reuse while you work.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="selection" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Selection Workflow</h2>
+        <div class="space-y-3 text-zinc-400">
+          <p>Use the <strong class="text-zinc-200">Selection</strong> tool to drag out a rectangular selection.</p>
+          <p>Drag inside the selection to move only the selection box. Hold <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Shift</kbd> while dragging to move the selected pixels with the box.</p>
+          <p>On touch devices, use the <strong class="text-zinc-200">Move</strong> button in the selection toolbar instead of holding Shift.</p>
+          <p><kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + C</kbd> copies the selected pixels into the stamp buffer. A translucent preview shows what will be pasted at the current selection position.</p>
+          <p><kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + V</kbd> stamps the copied pixels, <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + X</kbd> cuts them, and <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Esc</kbd> clears the selection.</p>
+        </div>
+      </section>
+
+      <section id="animation" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Frames, Layers, and Animation</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">Timeline Matrix</h3>
+            <p class="text-xs text-zinc-400">
+              Frames create motion. Add, duplicate, delete, and reorder frames to build simple loops. Matrices help organize
+              separate animation sets such as Idle, Walk, Attack, Effects, or UI states.
+            </p>
+          </article>
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">Layers</h3>
+            <p class="text-xs text-zinc-400">
+              Layers let you separate background, character, outline, effects, and details. This makes it easier to edit one
+              part of a sprite without damaging the rest of the artwork.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="export" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Saving and Exporting</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-xs">
+            <thead>
+              <tr class="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">
+                <th class="px-4 py-2.5 font-semibold">Format</th>
+                <th class="px-4 py-2.5 font-semibold">Best for</th>
+                <th class="px-4 py-2.5 font-semibold">Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800">
+              <tr><td class="px-4 py-2.5 font-medium text-white">PNG</td><td class="px-4 py-2.5 text-zinc-400">Icons, still sprites, tiles</td><td class="px-4 py-2.5 text-zinc-400">Exports a crisp still image with nearest-neighbor scaling.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">GIF</td><td class="px-4 py-2.5 text-zinc-400">Small animated previews</td><td class="px-4 py-2.5 text-zinc-400">Uses timeline frames and the current FPS setting.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">Spritesheet</td><td class="px-4 py-2.5 text-zinc-400">Game asset pipelines</td><td class="px-4 py-2.5 text-zinc-400">Places animation frames into a sheet for engines or tools.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">.dotproj</td><td class="px-4 py-2.5 text-zinc-400">Continuing work later</td><td class="px-4 py-2.5 text-zinc-400">Keeps project structure, layers, frames, and matrices.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="shortcuts" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">Default Shortcuts</h2>
+        <p class="mb-4 text-xs text-zinc-500">You can customize tool shortcuts from the Setting menu.</p>
+        <div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">B</strong><span class="ml-2 text-zinc-400">Pencil</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">E</strong><span class="ml-2 text-zinc-400">Eraser</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">G</strong><span class="ml-2 text-zinc-400">Bucket</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">I</strong><span class="ml-2 text-zinc-400">Eyedropper</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">L / R / O</strong><span class="ml-2 text-zinc-400">Line, Rectangle, Ellipse</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">U / J</strong><span class="ml-2 text-zinc-400">Lighten, Darken</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">M</strong><span class="ml-2 text-zinc-400">Selection</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">Ctrl + Z / Y</strong><span class="ml-2 text-zinc-400">Undo, Redo</span></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-3"><strong class="text-white">Space + Drag</strong><span class="ml-2 text-zinc-400">Pan canvas</span></div>
+        </div>
+      </section>
+
+      <section id="faq" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">FAQ</h2>
+        <div class="space-y-4">
+          <div class="border border-zinc-800 bg-zinc-950 p-4">
+            <h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> Are my drawings uploaded to a server?</h3>
+            <p class="pl-5 text-xs text-zinc-400">No. The editor is designed around local browser work. Save important art as .dotproj files or exported images.</p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4">
+            <h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> Can I use exported artwork commercially?</h3>
+            <p class="pl-5 text-xs text-zinc-400">Artwork you independently create with the editor belongs to you. See the Terms of Service for more details.</p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4">
+            <h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> What are Lighten and Darken for?</h3>
+            <p class="pl-5 text-xs text-zinc-400">They are shading tools for building highlights and shadows gradually without jumping straight to white or black.</p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4">
+            <h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> What should I export for a game engine?</h3>
+            <p class="pl-5 text-xs text-zinc-400">Use PNG for individual sprites and spritesheet export when your engine expects multiple frames in one image.</p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4">
+            <h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> Does the editor work on mobile?</h3>
+            <p class="pl-5 text-xs text-zinc-400">Yes. The mobile layout includes compact palette, tool, frame, and matrix controls for touch-based editing.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <main data-lang="ko" class="space-y-12 text-sm leading-relaxed text-zinc-300">
+      <section id="ko-start" class="scroll-mt-6">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">시작하기</h2>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div class="space-y-4 text-zinc-400">
+            <p>기본 캔버스는 빠른 스프라이트 작업에 맞춰져 있습니다. 32 x 32 크기는 아이콘과 캐릭터를 만들기에 작고 명확하면서도, 외곽선, 색상 배치, 하이라이트, 그림자를 연습하기에 충분합니다.</p>
+            <p>Pencil 도구를 선택하고 팔레트에서 전경색을 고른 뒤, 먼저 큰 실루엣을 그려보세요. 디테일이나 이펙트를 분리하고 싶다면 새 레이어를 추가합니다. 애니메이션을 만들 때는 프레임을 조금씩 추가하고 움직임을 먼저 확인한 뒤 픽셀을 다듬는 것이 좋습니다.</p>
+            <p>에디터는 브라우저에서 실행됩니다. 그리는 동안 프로젝트 데이터는 의도적으로 서버에 업로드되지 않으므로, 중요한 작업은 <strong class="text-zinc-200">.dotproj</strong> 파일로 저장하고 완성 이미지는 PNG, GIF, 스프라이트시트로 내보내세요.</p>
+          </div>
+          <div class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-3 font-bold text-white">처음 사용 추천 흐름</h3>
+            <ol class="list-decimal space-y-2 pl-5 text-xs text-zinc-400">
+              <li>기본 32 x 32 캔버스를 그대로 사용하거나 새 캔버스를 만듭니다.</li>
+              <li>Pencil 도구로 큰 실루엣을 먼저 잡습니다.</li>
+              <li>Lighten과 Darken으로 간단한 명암을 만듭니다.</li>
+              <li>대기 동작이나 움직임이 필요하면 두 번째 프레임을 추가합니다.</li>
+              <li>정지 이미지는 PNG로, 애니메이션 미리보기는 GIF로 내보냅니다.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="ko-tools" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">도구 가이드</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">그리기 도구</h3>
+            <ul class="list-disc space-y-1.5 pl-5 text-xs text-zinc-400">
+              <li><strong class="text-zinc-200">Pencil</strong>: 픽셀을 하나씩 칠하거나 드래그해서 연속 선을 그립니다.</li>
+              <li><strong class="text-zinc-200">Eraser</strong>: 픽셀을 투명 상태로 지웁니다.</li>
+              <li><strong class="text-zinc-200">Bucket</strong>: 같은 색이나 투명 영역으로 연결된 부분을 채웁니다.</li>
+              <li><strong class="text-zinc-200">Eyedropper</strong>: 캔버스에서 색을 찍어 현재 색상 슬롯에 가져옵니다.</li>
+            </ul>
+          </article>
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">도형과 명암 도구</h3>
+            <ul class="list-disc space-y-1.5 pl-5 text-xs text-zinc-400">
+              <li><strong class="text-zinc-200">Line</strong>: 시작점에서 끝점까지 픽셀 선을 그립니다.</li>
+              <li><strong class="text-zinc-200">Rectangle</strong>: 패널, 타일, UI, 소품에 쓸 수 있는 사각형 윤곽선을 그립니다.</li>
+              <li><strong class="text-zinc-200">Ellipse</strong>: 이펙트, 동전, 머리, 아이콘 등에 쓸 원과 타원을 그립니다.</li>
+              <li><strong class="text-zinc-200">Lighten / Darken</strong>: 픽셀 아트 느낌을 유지하면서 칠해진 픽셀을 한 단계씩 밝게 또는 어둡게 조절합니다.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="ko-palette" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">팔레트와 색상 작업</h2>
+        <div class="space-y-4 text-zinc-400">
+          <p>픽셀 아트는 제한된 팔레트에서 더 잘 읽히는 경우가 많습니다. 비슷한 색을 많이 쓰기보다 외곽선, 중간색, 하이라이트, 그림자에 사용할 작은 색상 세트를 정하면 작은 크기에서도 스프라이트가 더 명확하게 보입니다.</p>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-2 font-semibold text-white">전경색</h3><p class="text-xs text-zinc-400">그리기와 도형 도구가 주로 사용하는 색상입니다.</p></div>
+            <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-2 font-semibold text-white">배경색</h3><p class="text-xs text-zinc-400">빠르게 전환하거나 보조 색상으로 사용할 수 있는 색상 슬롯입니다.</p></div>
+            <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-2 font-semibold text-white">최근 색상</h3><p class="text-xs text-zinc-400">최근 사용한 색상을 다시 쉽게 선택할 수 있습니다.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="ko-selection" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">선택 도구 흐름</h2>
+        <div class="space-y-3 text-zinc-400">
+          <p><strong class="text-zinc-200">Selection</strong> 도구로 사각형 선택 영역을 만들 수 있습니다.</p>
+          <p>선택 영역 안을 드래그하면 선택 박스만 이동합니다. <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Shift</kbd>를 누른 상태로 드래그하면 선택한 픽셀이 박스와 함께 이동합니다.</p>
+          <p>터치 기기에서는 Shift 대신 선택 툴바의 <strong class="text-zinc-200">Move</strong> 버튼을 사용합니다.</p>
+          <p><kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + C</kbd>는 선택 픽셀을 복사합니다. 복사된 픽셀은 붙여넣기 전에 반투명 미리보기로 표시됩니다.</p>
+          <p><kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + V</kbd>는 붙여넣기, <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Ctrl + X</kbd>는 잘라내기, <kbd class="bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-amber-300">Esc</kbd>는 선택 해제입니다.</p>
+        </div>
+      </section>
+
+      <section id="ko-animation" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">프레임, 레이어, 애니메이션</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">타임라인 매트릭스</h3>
+            <p class="text-xs text-zinc-400">프레임은 움직임을 만듭니다. 프레임 추가, 복제, 삭제, 순서 변경으로 간단한 루프를 만들 수 있고, 매트릭스는 Idle, Walk, Attack, Effect 같은 별도 애니메이션 세트를 정리하는 데 유용합니다.</p>
+          </article>
+          <article class="border border-zinc-800 bg-zinc-950 p-5">
+            <h3 class="mb-2 font-bold text-white">레이어</h3>
+            <p class="text-xs text-zinc-400">레이어는 배경, 캐릭터, 외곽선, 이펙트, 디테일을 분리합니다. 한 부분을 수정할 때 다른 픽셀을 망가뜨리지 않아 작업을 더 안정적으로 진행할 수 있습니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="ko-export" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">저장과 내보내기</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse text-left text-xs">
+            <thead><tr class="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400"><th class="px-4 py-2.5 font-semibold">형식</th><th class="px-4 py-2.5 font-semibold">추천 용도</th><th class="px-4 py-2.5 font-semibold">설명</th></tr></thead>
+            <tbody class="divide-y divide-zinc-800">
+              <tr><td class="px-4 py-2.5 font-medium text-white">PNG</td><td class="px-4 py-2.5 text-zinc-400">아이콘, 정지 스프라이트, 타일</td><td class="px-4 py-2.5 text-zinc-400">픽셀 선명도를 유지한 정지 이미지로 내보냅니다.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">GIF</td><td class="px-4 py-2.5 text-zinc-400">작은 애니메이션 미리보기</td><td class="px-4 py-2.5 text-zinc-400">타임라인 프레임과 현재 FPS 설정을 사용합니다.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">Spritesheet</td><td class="px-4 py-2.5 text-zinc-400">게임 에셋 파이프라인</td><td class="px-4 py-2.5 text-zinc-400">여러 프레임을 하나의 이미지 시트로 배치합니다.</td></tr>
+              <tr><td class="px-4 py-2.5 font-medium text-white">.dotproj</td><td class="px-4 py-2.5 text-zinc-400">나중에 이어서 작업</td><td class="px-4 py-2.5 text-zinc-400">프로젝트 구조, 레이어, 프레임, 매트릭스를 유지합니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="ko-faq" class="scroll-mt-6 border-t border-zinc-800 pt-8">
+        <h2 class="mb-4 border-l-4 border-amber-400 pl-3 text-xl font-bold text-white">FAQ</h2>
+        <div class="space-y-4">
+          <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> 그림이 서버에 업로드되나요?</h3><p class="pl-5 text-xs text-zinc-400">아니요. 에디터는 로컬 브라우저 작업 흐름을 중심으로 설계되었습니다. 중요한 작업은 .dotproj 파일이나 이미지로 저장하세요.</p></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> 내보낸 작업물을 상업적으로 사용할 수 있나요?</h3><p class="pl-5 text-xs text-zinc-400">사용자가 독립적으로 만든 작업물은 사용자에게 속합니다. 자세한 내용은 서비스 약관을 확인하세요.</p></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> Lighten과 Darken은 무엇에 쓰나요?</h3><p class="pl-5 text-xs text-zinc-400">하이라이트와 그림자를 단계적으로 만들기 위한 명암 도구입니다.</p></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> 게임 엔진에 쓸 때는 무엇을 내보내야 하나요?</h3><p class="pl-5 text-xs text-zinc-400">개별 스프라이트는 PNG를, 여러 프레임이 한 이미지에 필요하면 스프라이트시트를 사용하세요.</p></div>
+          <div class="border border-zinc-800 bg-zinc-950 p-4"><h3 class="mb-1.5 font-semibold text-white"><span class="font-bold text-amber-400">Q.</span> 모바일에서도 사용할 수 있나요?</h3><p class="pl-5 text-xs text-zinc-400">네. 모바일 레이아웃은 터치 편집을 위한 팔레트, 도구, 프레임, 매트릭스 컨트롤을 제공합니다.</p></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-8 flex flex-col items-center justify-between gap-4 border-t border-zinc-800 pt-6 text-center text-xs text-zinc-500 sm:flex-row">
+      <span>© 2026 MAKE PIXEL DOT. All rights reserved.</span>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/about.html" class="transition-colors hover:text-zinc-300">About / Contact</a>
+        <a href="/privacy.html" class="transition-colors hover:text-zinc-300">Privacy Policy</a>
+        <a href="/terms.html" class="transition-colors hover:text-zinc-300">Terms of Service</a>
+      </div>
+    </footer>
+  </div>
+  <script src="/static-language.js"></script>
+</body>
+
+</html>

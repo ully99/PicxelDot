@@ -1,10 +1,27 @@
-export type Tool = "pencil" | "eraser" | "bucket" | "eyedropper";
+export type Tool =
+  | "pencil"
+  | "eraser"
+  | "bucket"
+  | "eyedropper"
+  | "line"
+  | "rectangle"
+  | "ellipse"
+  | "lighten"
+  | "darken"
+  | "selection";
 
 export type Pixel = string | null;
 
 export type PixelPoint = {
   x: number;
   y: number;
+};
+
+export type SelectionRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 export type Layer = {
@@ -45,4 +62,18 @@ export type CanvasState = {
   activeMatrixId: string;
 };
 
+export type ShortcutAction =
+  | "pencil"
+  | "eraser"
+  | "bucket"
+  | "eyedropper"
+  | "line"
+  | "rectangle"
+  | "ellipse"
+  | "lighten"
+  | "darken"
+  | "selection"
+  | "brushSizeDecrease"
+  | "brushSizeIncrease";
 
+export type Shortcuts = Record<ShortcutAction, string>;

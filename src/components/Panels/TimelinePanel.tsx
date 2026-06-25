@@ -126,19 +126,19 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
   const reversedLayers = [...canvas.layers].reverse();
 
   return (
-    <section className={`flex shrink-0 flex-col border-t border-zinc-950 bg-zinc-800 text-zinc-200 transition-all duration-200 ${
+    <section className={`timeline-panel flex shrink-0 flex-col border-t border-zinc-950 bg-zinc-800 text-zinc-200 transition-all duration-200 ${
       isCollapsed ? "h-8" : "h-[200px]"
     }`}>
       {/* 1. Timeline Toolbar Controls */}
-      <div className="flex h-8 shrink-0 items-center justify-between border-b border-zinc-950 bg-zinc-700 px-3 font-ui text-[12px] font-bold text-zinc-100 shadow-[inset_0_-1px_0_#3f3f46]">
-        <div className="flex items-center gap-4">
-          <span className="font-pixel text-[11px] tracking-wider text-amber-300 uppercase flex items-center gap-1.5 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
+      <div className="flex h-8 shrink-0 items-center justify-start gap-4 overflow-x-auto overflow-y-hidden whitespace-nowrap border-b border-zinc-950 bg-zinc-700 px-3 font-ui text-[12px] font-bold text-zinc-100 shadow-[inset_0_-1px_0_#3f3f46] scrollbar-none">
+        <div className="flex shrink-0 items-center gap-4">
+          <span className="flex shrink-0 cursor-pointer items-center gap-1.5 font-pixel text-[11px] uppercase tracking-wider text-amber-300" onClick={() => setIsCollapsed(!isCollapsed)}>
             <Layers size={11} className="text-amber-300" />
             Timeline Matrix {isCollapsed ? "▲" : "▼"}
           </span>
 
           {/* Matrix Management Selector */}
-          <div className="flex items-center gap-1.5 border-l border-zinc-500 pl-4">
+          <div className="flex shrink-0 items-center gap-1.5 border-l border-zinc-500 pl-4">
             <span className="text-[10px] text-zinc-400 font-normal">Matrix:</span>
             <select
               value={canvas.activeMatrixId}
@@ -188,7 +188,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
           </div>
 
           {/* Animation Playback Controls */}
-          <div className="flex items-center gap-1 border-l border-zinc-500 pl-4">
+          <div className="flex shrink-0 items-center gap-1 border-l border-zinc-500 pl-4">
             <button
               className={`grid h-6 w-6 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-200 hover:bg-zinc-600 active:bg-zinc-950 ${
                 canvas.isPlaying ? "border-amber-300 text-amber-300" : ""
@@ -216,7 +216,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
           </div>
 
           {/* Frame CRUD Actions */}
-          <div className="flex items-center gap-1 border-l border-zinc-500 pl-4">
+          <div className="flex shrink-0 items-center gap-1 border-l border-zinc-500 pl-4">
             <button
               className="flex h-6 items-center gap-1 border border-zinc-950 bg-zinc-800 px-2 text-[10px] text-zinc-200 hover:bg-zinc-600 active:bg-zinc-950"
               onClick={() => canvas.addFrame()}
@@ -273,7 +273,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
           </div>
 
           {/* Frame Sequence Reordering */}
-          <div className="flex items-center gap-1 border-l border-zinc-500 pl-4">
+          <div className="flex shrink-0 items-center gap-1 border-l border-zinc-500 pl-4">
             <button
               className="grid h-6 w-6 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-200 hover:bg-zinc-600 active:bg-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={activeFrameIndex <= 0}
@@ -296,7 +296,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
         </div>
 
         {/* Previous Frame & Collapse Control */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             className={`flex h-6 items-center gap-1.5 border border-zinc-950 px-2 text-[10px] font-semibold shadow-pixel transition-all hover:bg-zinc-600 active:bg-zinc-950 ${
               onionSkinEnabled
@@ -327,9 +327,9 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
         <div className="flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden select-none">
         
         {/* A. Left Sidebar: Layer Names Column */}
-        <div className="w-[180px] shrink-0 border-r border-zinc-950 bg-zinc-900/90 flex flex-col min-h-0">
+        <div className="w-[110px] md:w-[180px] shrink-0 border-r border-zinc-950 bg-zinc-900/90 flex flex-col min-h-0">
           {/* Header Corner Slot - Extra height to cover Tag row + Frame numbers row */}
-          <div className="h-[48px] shrink-0 border-b border-zinc-950 bg-zinc-950/80 px-2 flex flex-col justify-center gap-1 font-ui text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+          <div className="h-[48px] shrink-0 border-b border-zinc-950 bg-zinc-950/80 px-1 md:px-2 flex flex-col justify-center gap-1 font-ui text-[9px] md:text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
             <div className="flex items-center justify-between">
               <span>Layers</span>
               <div className="flex gap-1.5">
@@ -352,7 +352,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
             </div>
           </div>
 
-          {/* Layer Row List – 드래그앤드롭으로 순서 변경 지원 */}
+          {/* Layer row list with drag-and-drop reordering */}
           <div className="flex-1 overflow-y-auto scrollbar-none">
             {reversedLayers.map((layer) => {
               const isSelected = layer.id === canvas.activeLayerId;
@@ -363,7 +363,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
                   key={layer.id}
                   draggable={true}
                   onDragStart={(e) => {
-                    // 드래그 시작: hook 기준 실제 인덱스를 전달
+                    // Pass the actual hook index when dragging starts.
                     e.dataTransfer.setData("layer-index", idxInHook.toString());
                     e.dataTransfer.effectAllowed = "move";
                   }}
@@ -381,7 +381,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
                     }
                   }}
                   onClick={() => canvas.setActiveLayerId(layer.id)}
-                  className={`group h-7 flex items-center justify-between px-2 font-ui text-[11px] border-b border-zinc-950/40 cursor-move transition-colors ${
+                  className={`group h-7 flex items-center justify-between px-1 md:px-2 font-ui text-[10px] md:text-[11px] border-b border-zinc-950/40 cursor-move transition-colors ${
                     isSelected
                       ? "bg-amber-300/10 text-amber-300 font-bold border-l-2 border-l-amber-300"
                       : "hover:bg-zinc-800 text-zinc-300 hover:text-white"
@@ -425,7 +425,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
                     )}
                   </div>
 
-                  {/* 삭제 버튼 – hover 시 표시 */}
+                  {/* Show delete button on hover */}
                   <div className="opacity-0 group-hover:opacity-100 flex gap-0.5 ml-1 transition-opacity shrink-0">
                     <button
                       disabled={canvas.layers.length <= 1}
@@ -662,7 +662,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
       {/* 3. Custom Cel Context Menu */}
       {contextMenu?.visible && (
         <div
-          className="fixed z-50 w-48 border border-zinc-950 bg-zinc-850 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.6)] text-zinc-100 font-ui text-[11px]"
+          className="fixed z-50 w-48 border border-zinc-950 bg-zinc-900 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.6)] text-zinc-100 font-ui text-[11px]"
           style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
           onClick={() => setContextMenu(null)}
         >

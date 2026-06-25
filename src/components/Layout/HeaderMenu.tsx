@@ -2,11 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { usePixelCanvas } from "../../hooks/usePixelCanvas";
 import { GIFEncoder } from "gifenc";
 import { parseGIF, decompressFrames } from "gifuct-js";
-import { FolderOpen, Save, Settings, HelpCircle, FileImage, Eye, Layers } from "lucide-react";
-import { Pixel, Frame, Layer, Cel, Matrix } from "../../types";
+import { FolderOpen, Save, Settings, HelpCircle, FileImage, Eye, Layers, Menu } from "lucide-react";
+import { Pixel, Frame, Layer, Cel, Matrix, ShortcutAction } from "../../types";
+import { Language, LanguageToggle, copy } from "../../i18n";
 
 type HeaderMenuProps = {
   canvas: ReturnType<typeof usePixelCanvas>;
+  language: Language;
+  onLanguageChange: (language: Language) => void;
+  onNavigateHome: () => void;
+  onionSkinEnabled: boolean;
+  onTogglePreviousFrame: () => void;
 };
 
 type FrameThumbnailProps = {
@@ -60,7 +66,23 @@ function FrameThumbnail({ frame, layers, width, height, canvas }: FrameThumbnail
   );
 }
 
-export function HeaderMenu({ canvas }: HeaderMenuProps) {
+const shortcutItems: Array<{ id: ShortcutAction; label: string }> = [
+  { id: "pencil", label: "Pencil Tool" },
+  { id: "eraser", label: "Eraser Tool" },
+  { id: "bucket", label: "Bucket Fill Tool" },
+  { id: "eyedropper", label: "Eyedropper Tool" },
+  { id: "line", label: "Line Tool" },
+  { id: "rectangle", label: "Rectangle Tool" },
+  { id: "ellipse", label: "Ellipse Tool" },
+  { id: "lighten", label: "Lighten Tool" },
+  { id: "darken", label: "Darken Tool" },
+  { id: "selection", label: "Selection Tool" },
+  { id: "brushSizeDecrease", label: "Decrease Brush Size" },
+  { id: "brushSizeIncrease", label: "Increase Brush Size" },
+];
+
+export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome, onionSkinEnabled, onTogglePreviousFrame }: HeaderMenuProps) {
+  const t = copy[language];
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   // Modals Open State
@@ -71,6 +93,35 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isSettingOpen, setIsSettingOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [recordingAction, setRecordingAction] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!recordingAction) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const key = e.key;
+      // Handle escape to cancel
+      if (key === "Escape") {
+        setRecordingAction(null);
+        return;
+      }
+
+      // Ignore standard modifier keys
+      if (["control", "shift", "alt", "meta"].includes(key.toLowerCase())) {
+        return;
+      }
+
+      canvas.updateShortcut(recordingAction as ShortcutAction, key);
+      setRecordingAction(null);
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown, true);
+  }, [recordingAction, canvas]);
 
   // New Project Form States
   const [newWidth, setNewWidth] = useState(32);
@@ -603,16 +654,21 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
   };
 
   return (
-    <header className="relative z-30 flex h-9 shrink-0 items-center border-b border-zinc-950 bg-zinc-800 text-[11px] shadow-[inset_0_-1px_0_#3f3f46]" ref={menuRef}>
-      <div className="flex h-full items-center border-r border-zinc-950 px-4 font-ui font-black text-[14px] tracking-widest text-amber-300 uppercase select-none">
-        PICXEL DOT
-      </div>
+    <>
+    <header className="hidden md:flex relative z-30 h-9 shrink-0 items-center border-b border-zinc-950 bg-zinc-800 text-[11px] shadow-[inset_0_-1px_0_#3f3f46]" ref={menuRef}>
+      <button
+        className="flex h-full items-center border-r border-zinc-950 px-4 font-ui text-[14px] font-black uppercase tracking-widest text-amber-300 hover:bg-zinc-700 hover:text-amber-200"
+        onClick={onNavigateHome}
+        type="button"
+      >
+        MAKE PIXEL DOT
+      </button>
 
       <nav className="flex h-full items-center">
         {/* 1. Project Menu */}
         <div className="relative h-full">
           <button
-            className={`h-full border-r border-zinc-950 px-4 font-ui text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Project" ? "bg-zinc-950 text-amber-300 font-bold" : ""}`}
+            className={`h-full w-20 border-r border-zinc-950 px-3 font-ui font-semibold text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Project" ? "bg-zinc-950 text-amber-300" : ""}`}
             onClick={() => handleMenuClick("Project")}
             type="button"
           >
@@ -659,11 +715,11 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
         {/* 2. Save Menu */}
         <div className="relative h-full">
           <button
-            className={`h-full border-r border-zinc-950 px-4 font-ui text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Save" ? "bg-zinc-950 text-amber-300 font-bold" : ""}`}
+            className={`h-full w-20 border-r border-zinc-950 px-3 font-ui font-semibold text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Save" ? "bg-zinc-950 text-amber-300" : ""}`}
             onClick={() => handleMenuClick("Save")}
             type="button"
           >
-            Save
+            {t.save}
           </button>
           {activeMenu === "Save" && (
             <div className="absolute left-0 top-9 w-48 border border-zinc-950 bg-zinc-800 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
@@ -675,7 +731,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 }}
                 type="button"
               >
-                Save as PNG...
+                {t.savePng}
               </button>
               <button
                 className="w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
@@ -685,7 +741,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 }}
                 type="button"
               >
-                Save as GIF...
+                {t.saveGif}
               </button>
               <button
                 className="w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
@@ -695,7 +751,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 }}
                 type="button"
               >
-                Save as Spritesheet...
+                {t.saveSpritesheet}
               </button>
               <hr className="border-zinc-950 my-1" />
               <button
@@ -703,7 +759,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 onClick={handleImportFileClick}
                 type="button"
               >
-                Import Image/GIF...
+                {t.importImageGif}
               </button>
             </div>
           )}
@@ -712,11 +768,11 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
         {/* 3. Setting Menu */}
         <div className="relative h-full">
           <button
-            className={`h-full border-r border-zinc-950 px-4 font-ui text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Setting" ? "bg-zinc-950 text-amber-300 font-bold" : ""}`}
+            className={`h-full w-20 border-r border-zinc-950 px-3 font-ui font-semibold text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Setting" ? "bg-zinc-950 text-amber-300" : ""}`}
             onClick={() => handleMenuClick("Setting")}
             type="button"
           >
-            Setting
+            {t.setting}
           </button>
           {activeMenu === "Setting" && (
             <div className="absolute left-0 top-9 w-48 border border-zinc-950 bg-zinc-800 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
@@ -728,7 +784,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 }}
                 type="button"
               >
-                <span>Canvas Options</span>
+                <span>{t.canvasOptions}</span>
                 <Settings size={12} />
               </button>
             </div>
@@ -738,14 +794,14 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
         {/* 4. Help Menu */}
         <div className="relative h-full">
           <button
-            className={`h-full border-r border-zinc-950 px-4 font-ui text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Help" ? "bg-zinc-950 text-amber-300 font-bold" : ""}`}
+            className={`h-full w-20 border-r border-zinc-950 px-3 font-ui font-semibold text-zinc-200 hover:bg-zinc-700 active:bg-zinc-950 ${activeMenu === "Help" ? "bg-zinc-950 text-amber-300" : ""}`}
             onClick={() => handleMenuClick("Help")}
             type="button"
           >
-            Help
+            {t.help}
           </button>
           {activeMenu === "Help" && (
-            <div className="absolute left-0 top-9 w-40 border border-zinc-950 bg-zinc-800 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+            <div className="absolute left-0 top-9 w-44 border border-zinc-950 bg-zinc-800 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
               <button
                 className="w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white flex items-center justify-between"
                 onClick={() => {
@@ -754,18 +810,57 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 }}
                 type="button"
               >
-                <span>Shortcuts & Info</span>
+                <span>{t.shortcutsInfo}</span>
                 <HelpCircle size={12} />
               </button>
+              <hr className="border-zinc-950 my-1" />
+              <a
+                href="/guide.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
+                onClick={() => setActiveMenu(null)}
+              >
+                {t.guideFaq}
+              </a>
+              <a
+                href="/about.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
+                onClick={() => setActiveMenu(null)}
+              >
+                {t.aboutContact}
+              </a>
+              <a
+                href="/privacy.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
+                onClick={() => setActiveMenu(null)}
+              >
+                {t.privacyPolicy}
+              </a>
+              <a
+                href="/terms.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2 text-left font-ui text-zinc-200 hover:bg-zinc-700 hover:text-white"
+                onClick={() => setActiveMenu(null)}
+              >
+                {t.termsService}
+              </a>
             </div>
           )}
         </div>
       </nav>
 
       <div className="ml-auto flex h-full items-center gap-2 border-l border-zinc-950 px-3 font-ui text-[10px] text-zinc-400">
-        <span>Project {canvas.width} x {canvas.height}</span>
+        <LanguageToggle language={language} onChange={onLanguageChange} />
+        <span>{t.project} {canvas.width} x {canvas.height}</span>
         <span className="h-2 w-2 bg-emerald-400 animate-pulse rounded-full" />
       </div>
+    </header>
 
       {/* Hidden inputs */}
       <input
@@ -1321,8 +1416,8 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
 
       {/* Setting Modal */}
       {isSettingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-[1px]">
-          <div className="w-80 border border-zinc-950 bg-zinc-900 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.6)] text-zinc-100 rounded">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 backdrop-blur-[1px]">
+          <div className="flex max-h-[92dvh] w-full max-w-md flex-col border border-zinc-950 bg-zinc-900 p-4 text-zinc-100 shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
             <div className="mb-4 flex items-center justify-between border-b border-zinc-950 pb-2 font-pixel text-[13px] text-amber-300 uppercase">
               <span>Settings</span>
               <button
@@ -1334,7 +1429,7 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
               </button>
             </div>
 
-            <div className="flex flex-col gap-3 font-ui text-[12px]">
+            <div className="flex flex-col gap-3 overflow-y-auto pr-1 font-ui text-[12px] scrollbar-thin">
               <div className="bg-zinc-950 p-3 border border-zinc-950 rounded text-zinc-400">
                 <div className="flex justify-between font-bold text-zinc-300 border-b border-zinc-900 pb-1 mb-1">
                   <span>Current Canvas</span>
@@ -1344,8 +1439,96 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                 <div>Layers: {canvas.layers.length}</div>
               </div>
 
-              <div className="text-[10px] text-zinc-500 italic leading-relaxed">
-                Configure other project options. Onion Skin values and animation frame links are managed in the Timeline panel.
+              <div className="border-t border-zinc-800 pt-3">
+                <div className="mb-2 font-bold text-zinc-300 uppercase tracking-wider text-[10px]">
+                  Canvas Size
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[16, 32, 64].map((size) => (
+                    <button
+                      className={`h-8 border px-2 font-mono text-[10px] font-bold hover:bg-zinc-700 ${
+                        canvas.width === size && canvas.height === size
+                          ? "border-amber-300 bg-amber-300/10 text-amber-300"
+                          : "border-zinc-950 bg-zinc-800 text-zinc-300"
+                      }`}
+                      key={size}
+                      onClick={() => canvas.resizeCanvas(size, size)}
+                      type="button"
+                    >
+                      {size} x {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-zinc-800 pt-3">
+                <div className="mb-2 font-bold text-zinc-300 uppercase tracking-wider text-[10px]">
+                  View
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    className={`h-8 border px-2 text-[10px] font-bold ${
+                      onionSkinEnabled
+                        ? "border-amber-300 bg-amber-300/10 text-amber-300"
+                        : "border-zinc-950 bg-zinc-800 text-zinc-400"
+                    }`}
+                    onClick={onTogglePreviousFrame}
+                    type="button"
+                  >
+                    Previous Frame
+                  </button>
+                  <button
+                    className={`h-8 border px-2 text-[10px] font-bold ${
+                      canvas.dimInactiveLayers
+                        ? "border-amber-300 bg-amber-300/10 text-amber-300"
+                        : "border-zinc-950 bg-zinc-800 text-zinc-400"
+                    }`}
+                    onClick={() => canvas.setDimInactiveLayers(!canvas.dimInactiveLayers)}
+                    type="button"
+                  >
+                    {canvas.dimInactiveLayers ? "Merged View" : "Active Only"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Keyboard Shortcuts Customizer */}
+              <div className="border-t border-zinc-850 pt-3">
+                <div className="mb-2 font-bold text-zinc-300 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                  <span>Customize Shortcuts</span>
+                  <button
+                    type="button"
+                    onClick={canvas.resetShortcuts}
+                    className="text-zinc-500 hover:text-amber-300 underline font-normal text-[9px] lowercase"
+                  >
+                    reset to default
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                  {shortcutItems.map((item) => {
+                    const isRecording = recordingAction === item.id;
+                    const currentKey = canvas.shortcuts?.[item.id] || "";
+                    return (
+                      <div key={item.id} className="flex items-center justify-between bg-zinc-950/60 p-2 border border-zinc-950 rounded">
+                        <span className="text-zinc-300 font-medium text-[11px]">{item.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => setRecordingAction(isRecording ? null : item.id)}
+                          className={`h-7 px-3 border rounded text-[10px] font-mono font-bold transition-all shadow-pixel ${
+                            isRecording
+                              ? "border-amber-300 bg-amber-300/10 text-amber-300 animate-pulse"
+                              : "border-zinc-800 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                          }`}
+                        >
+                          {isRecording ? "Press a key..." : currentKey.toUpperCase() || "NONE"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="text-[10px] text-zinc-500 italic leading-relaxed border-t border-zinc-850 pt-2">
+                Desktop timeline still provides advanced frame and cel-link controls.
               </div>
 
               <button
@@ -1383,25 +1566,41 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
                   <span className="text-zinc-300 font-bold">E</span> <span>Eraser Tool</span>
                   <span className="text-zinc-300 font-bold">G</span> <span>Bucket Fill Tool</span>
                   <span className="text-zinc-300 font-bold">I</span> <span>Eyedropper Tool</span>
+                  <span className="text-zinc-300 font-bold">L</span> <span>Line Tool</span>
+                  <span className="text-zinc-300 font-bold">R</span> <span>Rectangle Tool</span>
+                  <span className="text-zinc-300 font-bold">O</span> <span>Ellipse Tool</span>
+                  <span className="text-zinc-300 font-bold">U / J</span> <span>Lighten / Darken</span>
+                  <span className="text-zinc-300 font-bold">M</span> <span>Selection Tool</span>
                   <span className="text-zinc-300 font-bold">[ / ]</span> <span>Brush Size - / +</span>
-                  <span className="text-zinc-300 font-bold">Ctrl + Z</span> <span>Undo (되돌리기)</span>
-                  <span className="text-zinc-300 font-bold">Ctrl + Y</span> <span>Redo (다시 실행)</span>
+                  <span className="text-zinc-300 font-bold">Ctrl + C</span> <span>Copy selected pixels</span>
+                  <span className="text-zinc-300 font-bold">Ctrl + V</span> <span>Stamp copied pixels</span>
+                  <span className="text-zinc-300 font-bold">Ctrl + X</span> <span>Cut selected pixels</span>
+                  <span className="text-zinc-300 font-bold">Shift + Drag</span> <span>Move selection pixels</span>
+                  <span className="text-zinc-300 font-bold">Ctrl + Z</span> <span>Undo</span>
+                  <span className="text-zinc-300 font-bold">Ctrl + Y</span> <span>Redo</span>
                   <span className="text-zinc-300 font-bold">Space + Drag</span> <span>Pan Canvas</span>
                   <span className="text-zinc-300 font-bold">Scroll Wheel</span> <span>Zoom Canvas</span>
                 </div>
               </div>
 
               <div>
+                <span className="font-bold text-amber-300 border-b border-zinc-950 pb-1 block mb-1.5">Selection Tool</span>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Drag to create a selection. Drag inside it to move only the box, or use Shift + drag to move the pixels with it. On touch devices, turn on the Move button in the selection toolbar instead of holding Shift.
+                </p>
+              </div>
+
+              <div>
                 <span className="font-bold text-amber-300 border-b border-zinc-950 pb-1 block mb-1.5">Multi-Matrix Design</span>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  각 Matrix는 개별적인 애니메이션 시퀀스(동작)를 나타냅니다. 예를 들어 "대기(Idle)", "걷기(Walk)" 등을 별도의 매트릭스로 생성하고, 스프라이트 시트 저장 시 행별로 차례대로 정렬되어 에셋으로 출력됩니다.
+                  Each matrix represents a separate animation sequence, such as Idle or Walk. Spritesheet export arranges those sequences in order for asset output.
                 </p>
               </div>
 
               <div>
                 <span className="font-bold text-amber-300 border-b border-zinc-950 pb-1 block mb-1.5">Drag and Drop (DND)</span>
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  타임라인의 프레임 번호 헤더나 레이어 패널의 레이어 항목을 마우스로 드래그 앤 드롭하여 간편하게 정렬 순서를 조절할 수 있습니다.
+                  Drag frame headers in the timeline or layer items in the layer panel to reorder them.
                 </p>
               </div>
             </div>
@@ -1416,6 +1615,188 @@ export function HeaderMenu({ canvas }: HeaderMenuProps) {
           </div>
         </div>
       )}
-    </header>
+
+      {/* Mobile Header */}
+      <header className="md:hidden relative z-30 flex h-10 shrink-0 items-center justify-between border-b border-zinc-950 bg-zinc-800 px-3 text-[11px] text-zinc-200 select-none">
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="grid h-8 w-8 place-items-center border border-zinc-950 bg-zinc-900 text-zinc-300 active:bg-zinc-700"
+          aria-label={t.openMenu}
+          type="button"
+        >
+          <Menu size={18} />
+        </button>
+        <button
+          className="font-ui text-[13px] font-black uppercase tracking-widest text-amber-300"
+          onClick={onNavigateHome}
+          type="button"
+        >
+          MAKE PIXEL DOT
+        </button>
+        <button
+          onClick={() => setIsSettingOpen(true)}
+          className="grid h-8 w-8 place-items-center border border-zinc-950 bg-zinc-900 text-zinc-300 active:bg-zinc-700"
+          aria-label={t.openSettings}
+          type="button"
+        >
+          <Settings size={16} />
+        </button>
+      </header>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Content */}
+          <div className="relative w-[min(82vw,18rem)] bg-zinc-900 border-r border-zinc-950 flex flex-col h-full text-zinc-200 p-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-950 pb-2 mb-4">
+              <span className="font-ui font-black text-amber-300 text-[13px] uppercase tracking-widest">{t.menu}</span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-zinc-400 hover:text-white"
+                type="button"
+              >
+                x
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-1.5 overflow-y-auto text-[12px] font-ui scrollbar-none">
+              <LanguageToggle language={language} onChange={onLanguageChange} />
+              <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1 mt-3">{t.project}</div>
+              <button
+                onClick={() => {
+                  setIsNewModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.newProject}
+              </button>
+              <button
+                onClick={() => {
+                  handleClearCanvas();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950 text-red-400"
+                type="button"
+              >
+                {t.clearProject}
+              </button>
+              <button
+                onClick={() => {
+                  handleLoadProjectClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.loadProject}
+              </button>
+              <button
+                onClick={() => {
+                  handleSaveProject();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.saveProject}
+              </button>
+
+              <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-4 mb-1">Export / Import</div>
+              <button
+                onClick={() => {
+                  setIsExportPNGOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.savePng}
+              </button>
+              <button
+                onClick={() => {
+                  setIsExportGIFOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.saveGif}
+              </button>
+              <button
+                onClick={() => {
+                  setIsExportSpritesheetOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.saveSpritesheet}
+              </button>
+              <button
+                onClick={() => {
+                  handleImportFileClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.importImageGif}
+              </button>
+
+              <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-4 mb-1">{t.informationPolicies}</div>
+              <button
+                onClick={() => {
+                  setIsHelpOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+                type="button"
+              >
+                {t.shortcutsInfo}
+              </button>
+              <a
+                href="/guide.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+              >
+                {t.guideFaq}
+              </a>
+              <a
+                href="/about.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+              >
+                {t.aboutContact}
+              </a>
+              <a
+                href="/privacy.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+              >
+                {t.privacyPolicy}
+              </a>
+              <a
+                href="/terms.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-left py-2 px-3 bg-zinc-950/40 hover:bg-zinc-800 rounded border border-zinc-950"
+              >
+                {t.termsService}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

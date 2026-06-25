@@ -33,7 +33,6 @@ export function LayerPanel({ canvas, showOtherLayers, onToggleOtherLayers }: Lay
     }
   };
 
-  // Aseprite 레이어 렌더링 순서: 배열의 역순이 시각적 위 (배열 뒤쪽이 레이어 위)
   const reversedLayers = [...canvas.layers].reverse();
   const activeLayerIndex = canvas.layers.findIndex((l) => l.id === canvas.activeLayerId);
 

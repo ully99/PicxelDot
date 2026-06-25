@@ -1,4 +1,5 @@
 import { PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, X } from "lucide-react";
 
 const initialPalettes = {
   "PICO-8": [
@@ -58,8 +59,11 @@ const initialRecentColors = [
 type ColorPaletteProps = {
   background: string;
   foreground: string;
+  onCollapse?: () => void;
   onSelectBackground: (color: string) => void;
   onSelectForeground: (color: string) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 };
 
 type Slot = "foreground" | "background";
@@ -72,8 +76,11 @@ type HsvColor = {
 export function ColorPalette({
   background,
   foreground,
+  onCollapse,
   onSelectBackground,
   onSelectForeground,
+  isMobileOpen = false,
+  onCloseMobile,
 }: ColorPaletteProps) {
   const [activeSlot, setActiveSlot] = useState<Slot>("foreground");
   const [hexInput, setHexInput] = useState(toHexColor(foreground));
@@ -86,6 +93,7 @@ export function ColorPalette({
   const [selectedPalette, setSelectedPalette] = useState(() => loadSelectedPalette());
   const [recentColors, setRecentColors] = useState<string[]>(() => loadRecentColors());
   const pickerRef = useRef<HTMLDivElement>(null);
+  const hueRef = useRef<HTMLDivElement>(null);
   const activeColor = activeSlot === "foreground" ? foreground : background;
   const activeHex = useMemo(() => toHexColor(activeColor), [activeColor]);
   const [pickerHsv, setPickerHsv] = useState<HsvColor>(() => hexToHsv(toHexColor(foreground)));
@@ -154,6 +162,7 @@ export function ColorPalette({
   };
 
   const updateSvFromPointer = (event: PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
     const rect = pickerRef.current?.getBoundingClientRect();
 
     if (!rect) {
@@ -164,6 +173,22 @@ export function ColorPalette({
     const v = clamp(100 - ((event.clientY - rect.top) / rect.height) * 100, 0, 100);
     setPickerHsv((current) => {
       const next = { ...current, s, v };
+      setHexInput(hsvToHex(next));
+      return next;
+    });
+  };
+
+  const updateHueFromPointer = (event: PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const rect = hueRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    const h = clamp(((event.clientX - rect.left) / rect.width) * 360, 0, 360);
+    setPickerHsv((current) => {
+      const next = { ...current, h };
       setHexInput(hsvToHex(next));
       return next;
     });
@@ -180,7 +205,7 @@ export function ColorPalette({
     applyColor(nextColor);
     setPalettes((current) => ({
       ...current,
-      [selectedPalette]: addRecentColor(current[selectedPalette], nextColor),
+      [selectedPalette]: addPaletteColor(current[selectedPalette], nextColor),
     }));
   };
 
@@ -233,9 +258,45 @@ export function ColorPalette({
   };
 
   return (
-    <aside className="relative flex min-w-0 flex-col border-r border-zinc-950 bg-zinc-800 shadow-[inset_-1px_0_0_#3f3f46]">
-      <PanelHeader label="Palette" />
+    <>
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          onClick={onCloseMobile}
+        />
+      )}
+      <aside className={`
+        palette-panel
+        fixed inset-y-0 left-0 z-40 flex w-[240px] min-w-0 flex-col overflow-visible border-r border-zinc-950 bg-zinc-800 shadow-[inset_-1px_0_0_#3f3f46]
+        transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? "transform-none" : "-translate-x-full"}
+        md:relative md:inset-auto md:z-auto md:flex md:h-full md:max-h-full md:min-h-0 md:w-auto md:transform-none
+      `}>
+        <div className="flex h-9 shrink-0 items-center justify-between border-b border-zinc-950 bg-zinc-700 px-3 py-2 font-ui text-[13px] font-bold uppercase text-zinc-100">
+          <span>Palette</span>
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="hidden h-6 w-6 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-300 hover:bg-zinc-600 hover:text-amber-300 md:grid"
+              title="Collapse palette"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+          {onCloseMobile && (
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="grid h-6 w-6 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-300 active:bg-zinc-700 md:hidden"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
 
+      <div className="palette-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain pb-10 [touch-action:auto]">
       <section className="border-b border-zinc-950 p-3">
         <div className="mb-2 font-ui text-[11px] font-semibold uppercase text-zinc-300">
           Current
@@ -331,7 +392,7 @@ export function ColorPalette({
             DEL COLOR
           </button>
         </div>
-        <div className="mt-3 grid h-[148px] auto-rows-max grid-cols-5 content-start gap-1.5 overflow-y-auto p-1">
+        <div className="mt-3 grid h-[148px] auto-rows-max grid-cols-5 content-start gap-1.5 overflow-y-auto overscroll-contain p-1 [touch-action:pan-y]">
           {currentPalette.map((color) => (
             <ColorButton
               active={color === activeHex}
@@ -344,13 +405,13 @@ export function ColorPalette({
         </div>
       </section>
 
-      <section className="min-h-0 flex-1 overflow-y-auto p-3">
+      <section className="p-3">
         <div className="mb-2 flex items-center justify-between font-ui text-[11px] font-semibold uppercase text-zinc-300">
           <span>Recent</span>
-          <span>{recentColors.length}</span>
+          <span>{Math.min(recentColors.length, 10)}</span>
         </div>
-        <div className="grid grid-cols-6 gap-1.5">
-          {recentColors.map((color) => (
+        <div className="grid grid-cols-5 gap-1.5 md:grid-cols-6">
+          {recentColors.slice(0, 10).map((color) => (
             <ColorButton
               active={color === activeHex}
               color={color}
@@ -361,9 +422,10 @@ export function ColorPalette({
           ))}
         </div>
       </section>
+      </div>
 
       {isPickerOpen ? (
-        <div className="absolute left-[244px] top-32 z-20 w-[390px] border border-zinc-950 bg-zinc-900 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.55)]">
+        <div className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-24px)] w-[calc(100vw-32px)] max-w-[390px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-zinc-950 bg-zinc-900 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.55)] md:absolute md:left-[244px] md:top-32 md:z-20 md:w-[390px] md:translate-x-0 md:translate-y-0">
           <div className="mb-2 flex items-center justify-between border-b border-zinc-950 pb-2 font-ui text-[12px] font-bold uppercase text-zinc-100">
             <span>Select Color</span>
             <button
@@ -375,11 +437,12 @@ export function ColorPalette({
             </button>
           </div>
 
-          <div className="grid grid-cols-[1fr_160px] gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_160px]">
             <div>
               <div
-                className="relative h-40 cursor-crosshair border border-zinc-950"
+                className="relative h-40 cursor-crosshair border border-zinc-950 [touch-action:none]"
                 onPointerDown={(event) => {
+                  event.preventDefault();
                   event.currentTarget.setPointerCapture(event.pointerId);
                   updateSvFromPointer(event);
                 }}
@@ -401,24 +464,32 @@ export function ColorPalette({
                   }}
                 />
               </div>
-              <input
+              <div
                 aria-label="Hue"
-                className="mt-2 h-3 w-full cursor-pointer appearance-none hue-slider"
-                max={360}
-                min={0}
-                onChange={(event) =>
-                  setPickerHsv((current) => {
-                    const next = {
-                      ...current,
-                      h: Number(event.target.value),
-                    };
-                    setHexInput(hsvToHex(next));
-                    return next;
-                  })
-                }
-                type="range"
-                value={Math.round(pickerHsv.h)}
-              />
+                className="relative mt-2 h-4 w-full cursor-ew-resize border border-zinc-950 [touch-action:none]"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  updateHueFromPointer(event);
+                }}
+                onPointerMove={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    updateHueFromPointer(event);
+                  }
+                }}
+                ref={hueRef}
+                role="slider"
+                style={{
+                  background:
+                    "linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
+                }}
+                tabIndex={0}
+              >
+                <span
+                  className="pointer-events-none absolute top-1/2 h-6 w-2 -translate-x-1/2 -translate-y-1/2 border border-zinc-950 bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.75)]"
+                  style={{ left: `${(pickerHsv.h / 360) * 100}%` }}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -523,7 +594,7 @@ export function ColorPalette({
       ) : null}
 
       {isPresetDialogOpen ? (
-        <div className="absolute left-[244px] top-32 z-20 w-64 border border-zinc-950 bg-zinc-900 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.55)]">
+        <div className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] max-w-xs -translate-x-1/2 -translate-y-1/2 border border-zinc-950 bg-zinc-900 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.55)] md:absolute md:left-[244px] md:top-32 md:z-20 md:w-64 md:translate-x-0 md:translate-y-0">
           <div className="mb-2 flex items-center justify-between border-b border-zinc-950 pb-2 font-ui text-[12px] font-bold uppercase text-zinc-100">
             <span>New Preset</span>
             <button
@@ -558,6 +629,7 @@ export function ColorPalette({
         </div>
       ) : null}
     </aside>
+  </>
   );
 }
 
@@ -615,7 +687,7 @@ function ColorButton({
   return (
     <button
       className={[
-        "aspect-square border shadow-pixel outline-none hover:brightness-110 focus:ring-2 focus:ring-amber-300",
+        "aspect-square border shadow-pixel outline-none hover:brightness-110 focus:ring-2 focus:ring-amber-300 [touch-action:pan-y]",
         active ? "border-amber-300" : "border-zinc-950",
       ].join(" ")}
       onClick={() => onApply(color)}
@@ -712,7 +784,15 @@ function addRecentColor(colors: string[], color: string) {
     return colors;
   }
 
-  return [color, ...colors.filter((current) => current !== color)].slice(0, 24);
+  return [color, ...colors.filter((current) => current !== color)].slice(0, 10);
+}
+
+function addPaletteColor(colors: string[] = [], color: string) {
+  if (!isHexColor(color)) {
+    return colors;
+  }
+
+  return [color, ...colors.filter((current) => current !== color)];
 }
 
 function loadPalettes() {
@@ -745,7 +825,7 @@ function loadRecentColors() {
 
   const colors = savedColors.map(toHexColor).filter(isHexColor);
 
-  return colors.length > 0 ? colors.slice(0, 24) : initialRecentColors;
+  return colors.length > 0 ? colors.slice(0, 10) : initialRecentColors;
 }
 
 function loadSelectedPalette() {
