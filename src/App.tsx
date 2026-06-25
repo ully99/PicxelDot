@@ -159,6 +159,7 @@ function EditorApp({
         onSetMirrorX={pixelCanvas.setMirrorX}
         onSetMirrorY={pixelCanvas.setMirrorY}
         onSetOpacity={pixelCanvas.setOpacity}
+        onResetView={canvasTransform.resetTransform}
         onUndo={pixelCanvas.undo}
         opacity={pixelCanvas.opacity}
         t={t}
@@ -692,7 +693,7 @@ function HomePage({
               <p className="mb-4 inline-flex border border-zinc-700 bg-zinc-950 px-2.5 py-1 font-ui text-xs font-bold uppercase tracking-wider text-amber-300">
                 {t.badge}
               </p>
-              <h1 className="font-ui text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl">
+              <h1 className="max-w-xl font-ui text-[34px] font-extrabold leading-[1.12] tracking-normal text-white sm:text-[48px] lg:text-[52px]">
                 {t.headline}
               </h1>
               <p className="mt-5 max-w-lg text-base leading-7 text-zinc-300">

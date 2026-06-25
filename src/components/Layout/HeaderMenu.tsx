@@ -126,6 +126,9 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
   // New Project Form States
   const [newWidth, setNewWidth] = useState(32);
   const [newHeight, setNewHeight] = useState(32);
+  const [settingsWidth, setSettingsWidth] = useState(32);
+  const [settingsHeight, setSettingsHeight] = useState(32);
+  const [isAspectLocked, setIsAspectLocked] = useState(true);
 
   // Export scale option
   const [exportScale, setExportScale] = useState(16);
@@ -166,6 +169,13 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
     }
   }, [canvas.matrices, canvas.activeMatrixId, selectedGIFMatrixId]);
 
+  useEffect(() => {
+    if (isSettingOpen) {
+      setSettingsWidth(canvas.width);
+      setSettingsHeight(canvas.height);
+    }
+  }, [canvas.height, canvas.width, isSettingOpen]);
+
   // Close menus on clicking outside
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -185,6 +195,33 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
     canvas.resizeCanvas(newWidth, newHeight);
     setIsNewModalOpen(false);
     setActiveMenu(null);
+  };
+
+  const setSettingsCanvasSize = (nextWidth: number, nextHeight: number) => {
+    const clampedWidth = Math.max(4, Math.min(256, Math.round(nextWidth) || 4));
+    const clampedHeight = Math.max(4, Math.min(256, Math.round(nextHeight) || 4));
+    setSettingsWidth(clampedWidth);
+    setSettingsHeight(clampedHeight);
+  };
+
+  const handleSettingsWidthChange = (value: number) => {
+    const nextWidth = Math.max(4, Math.min(256, Math.round(value) || 4));
+    setSettingsWidth(nextWidth);
+    if (isAspectLocked) {
+      setSettingsHeight(nextWidth);
+    }
+  };
+
+  const handleSettingsHeightChange = (value: number) => {
+    const nextHeight = Math.max(4, Math.min(256, Math.round(value) || 4));
+    setSettingsHeight(nextHeight);
+    if (isAspectLocked) {
+      setSettingsWidth(nextHeight);
+    }
+  };
+
+  const applySettingsCanvasSize = () => {
+    canvas.resizeCanvas(settingsWidth, settingsHeight);
   };
 
   const handleClearCanvas = () => {
@@ -902,7 +939,7 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
                   className="h-8 border border-zinc-950 bg-zinc-950 px-2 text-zinc-100 outline-none focus:border-amber-300 rounded"
                   type="number"
                   min={4}
-                  max={128}
+                  max={256}
                   value={newWidth}
                   onChange={(e) => setNewWidth(Number(e.target.value))}
                 />
@@ -913,14 +950,14 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
                   className="h-8 border border-zinc-950 bg-zinc-950 px-2 text-zinc-100 outline-none focus:border-amber-300 rounded"
                   type="number"
                   min={4}
-                  max={128}
+                  max={256}
                   value={newHeight}
                   onChange={(e) => setNewHeight(Number(e.target.value))}
                 />
               </div>
 
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {[16, 32, 64].map((size) => (
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {[16, 32, 64, 128, 256].map((size) => (
                   <button
                     key={size}
                     type="button"
@@ -1417,7 +1454,7 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
       {/* Setting Modal */}
       {isSettingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 backdrop-blur-[1px]">
-          <div className="flex max-h-[92dvh] w-full max-w-md flex-col border border-zinc-950 bg-zinc-900 p-4 text-zinc-100 shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
+          <div className="flex max-h-[92dvh] w-full max-w-lg flex-col border border-zinc-950 bg-zinc-900 p-4 text-zinc-100 shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
             <div className="mb-4 flex items-center justify-between border-b border-zinc-950 pb-2 font-pixel text-[13px] text-amber-300 uppercase">
               <span>Settings</span>
               <button
@@ -1440,25 +1477,71 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
               </div>
 
               <div className="border-t border-zinc-800 pt-3">
-                <div className="mb-2 font-bold text-zinc-300 uppercase tracking-wider text-[10px]">
-                  Canvas Size
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="font-bold text-zinc-300 uppercase tracking-wider text-[10px]">
+                    Canvas Size
+                  </div>
+                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400">
+                    <input
+                      checked={isAspectLocked}
+                      className="h-3 w-3 accent-amber-300"
+                      onChange={(event) => setIsAspectLocked(event.target.checked)}
+                      type="checkbox"
+                    />
+                    Lock ratio
+                  </label>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[16, 32, 64].map((size) => (
+                <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-7">
+                  {[16, 24, 32, 48, 64, 128, 256].map((size) => (
                     <button
                       className={`h-8 border px-2 font-mono text-[10px] font-bold hover:bg-zinc-700 ${
-                        canvas.width === size && canvas.height === size
+                        settingsWidth === size && settingsHeight === size
                           ? "border-amber-300 bg-amber-300/10 text-amber-300"
                           : "border-zinc-950 bg-zinc-800 text-zinc-300"
                       }`}
                       key={size}
-                      onClick={() => canvas.resizeCanvas(size, size)}
+                      onClick={() => setSettingsCanvasSize(size, size)}
                       type="button"
                     >
                       {size} x {size}
                     </button>
                   ))}
                 </div>
+                <div className="mt-3 grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+                  <label className="min-w-0">
+                    <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Width</span>
+                    <input
+                      className="h-8 w-full border border-zinc-950 bg-zinc-950 px-2 font-mono text-[11px] text-zinc-100 outline-none focus:border-amber-300"
+                      max={256}
+                      min={4}
+                      onChange={(event) => handleSettingsWidthChange(Number(event.target.value))}
+                      type="number"
+                      value={settingsWidth}
+                    />
+                  </label>
+                  <label className="min-w-0">
+                    <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Height</span>
+                    <input
+                      className="h-8 w-full border border-zinc-950 bg-zinc-950 px-2 font-mono text-[11px] text-zinc-100 outline-none focus:border-amber-300"
+                      max={256}
+                      min={4}
+                      onChange={(event) => handleSettingsHeightChange(Number(event.target.value))}
+                      type="number"
+                      value={settingsHeight}
+                    />
+                  </label>
+                  <button
+                    className="h-8 border border-amber-200 bg-amber-300 px-3 text-[10px] font-black uppercase text-zinc-950 shadow-pixel hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={settingsWidth === canvas.width && settingsHeight === canvas.height}
+                    onClick={applySettingsCanvasSize}
+                    type="button"
+                  >
+                    Apply
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] leading-relaxed text-zinc-500">
+                  Canvas pixels define the artwork size. Export scale controls the final PNG/GIF dimensions.
+                </p>
               </div>
 
               <div className="border-t border-zinc-800 pt-3">

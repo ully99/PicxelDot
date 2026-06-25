@@ -27,6 +27,22 @@ export function Toolbar({ activeTool, language, onCollapse, onSelectTool }: Tool
   const [hoveredTool, setHoveredTool] = useState<Tool | null>(null);
   const [hoveredToolTop, setHoveredToolTop] = useState<number | null>(null);
   const asideRef = useRef<HTMLElement>(null);
+  const selectionHelp =
+    language === "ko"
+      ? {
+          title: "선택",
+          create: "드래그: 선택 영역을 만들거나 선택 박스를 이동합니다.",
+          move: "안쪽에서 Shift + 드래그: 픽셀을 함께 이동합니다.",
+          clipboard: "Ctrl+C / Ctrl+V / Ctrl+X: 복사, 붙여넣기, 잘라내기.",
+          clear: "Esc 또는 바깥 클릭: 선택 해제.",
+        }
+      : {
+          title: "Selection",
+          create: "Drag: create or move the selection box.",
+          move: "Shift + drag inside: move pixels with the box.",
+          clipboard: "Ctrl+C / Ctrl+V / Ctrl+X: copy, stamp, cut.",
+          clear: "Esc or outside click: clear selection.",
+        };
 
   return (
     <aside ref={asideRef} className="relative hidden min-h-0 flex-col items-center overflow-visible border-l border-zinc-950 bg-zinc-800 p-2 shadow-[inset_1px_0_0_#3f3f46] md:flex">
@@ -79,11 +95,11 @@ export function Toolbar({ activeTool, language, onCollapse, onSelectTool }: Tool
           className="pointer-events-none absolute right-full z-50 mr-2 w-64 -translate-y-1/2 border border-zinc-950 bg-zinc-900 p-2 text-left font-ui text-[11px] leading-relaxed text-zinc-300 shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
           style={{ top: hoveredToolTop ?? 40 }}
         >
-          <div className="mb-1 font-bold uppercase text-amber-300">Selection</div>
-          <div>Drag: create or move the selection box.</div>
-          <div>Shift + drag inside: move pixels with the box.</div>
-          <div>Ctrl+C / Ctrl+V / Ctrl+X: copy, stamp, cut.</div>
-          <div>Esc: clear selection.</div>
+          <div className="mb-1 font-bold uppercase text-amber-300">{selectionHelp.title}</div>
+          <div>{selectionHelp.create}</div>
+          <div>{selectionHelp.move}</div>
+          <div>{selectionHelp.clipboard}</div>
+          <div>{selectionHelp.clear}</div>
         </div>
       ) : null}
     </aside>

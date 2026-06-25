@@ -1137,8 +1137,8 @@ export function usePixelCanvas({
   }, [activeTool, drawShape, getPointFromEvent, history, moveSelectionPixels, width, height]);
 
   const resizeCanvas = useCallback((newWidth: number, newHeight: number) => {
-    const nextWidth = clamp(Math.round(newWidth), 4, 128);
-    const nextHeight = clamp(Math.round(newHeight), 4, 128);
+    const nextWidth = clamp(Math.round(newWidth), 4, 256);
+    const nextHeight = clamp(Math.round(newHeight), 4, 256);
     setWidth(nextWidth);
     setHeight(nextHeight);
 
@@ -1162,8 +1162,8 @@ export function usePixelCanvas({
   }, [width, height, history]);
 
   const importCanvas = useCallback((pixels: Pixel[], newWidth: number, newHeight: number) => {
-    const nextWidth = clamp(Math.round(newWidth), 4, 128);
-    const nextHeight = clamp(Math.round(newHeight), 4, 128);
+    const nextWidth = clamp(Math.round(newWidth), 4, 256);
+    const nextHeight = clamp(Math.round(newHeight), 4, 256);
     setWidth(nextWidth);
     setHeight(nextHeight);
 

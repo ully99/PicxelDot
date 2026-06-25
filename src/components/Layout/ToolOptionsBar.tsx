@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlipHorizontal2, FlipVertical2, RotateCcw, RotateCw } from "lucide-react";
+import { FlipHorizontal2, FlipVertical2, Maximize2, RotateCcw, RotateCw } from "lucide-react";
 import { copy } from "../../i18n";
 
 type UiCopy = (typeof copy)[keyof typeof copy];
@@ -15,6 +15,7 @@ type ToolOptionsBarProps = {
   onSetMirrorX: (enabled: boolean) => void;
   onSetMirrorY: (enabled: boolean) => void;
   onSetOpacity: (opacity: number) => void;
+  onResetView: () => void;
   onUndo: () => void;
   opacity: number;
   t: UiCopy;
@@ -31,6 +32,7 @@ export function ToolOptionsBar({
   onSetMirrorX,
   onSetMirrorY,
   onSetOpacity,
+  onResetView,
   onUndo,
   opacity,
   t,
@@ -88,6 +90,15 @@ export function ToolOptionsBar({
       </label>
 
       <div className="flex shrink-0 items-center gap-1.5 md:ml-auto md:gap-2">
+        <button
+          className="grid h-8 w-8 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-100 shadow-pixel hover:bg-zinc-700 md:w-auto md:px-3 md:text-[12px] md:font-semibold"
+          onClick={onResetView}
+          title={t.resetView}
+          type="button"
+        >
+          <Maximize2 className="md:hidden" size={14} />
+          <span className="hidden md:inline">{t.resetView}</span>
+        </button>
         <button
           className={`grid h-8 w-8 place-items-center border shadow-pixel active:bg-zinc-700 md:hidden ${
             mirrorX

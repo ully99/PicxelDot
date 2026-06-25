@@ -15,11 +15,29 @@ export function useCanvasTransform(initialZoom = 1) {
   const [panY, setPanY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isTouchGestureActive, setIsTouchGestureActive] = useState(false);
 
   const startPanRef = useRef<Point | null>(null);
   const startOffsetRef = useRef<Point>({ x: 0, y: 0 });
   const touchPointersRef = useRef(new Map<number, Point>());
   const gestureStartRef = useRef<GestureSnapshot | null>(null);
+  const isTouchGestureActiveRef = useRef(false);
+  const blockTouchDrawingUntilRef = useRef(0);
+
+  const blockTouchDrawingBriefly = useCallback(() => {
+    blockTouchDrawingUntilRef.current = Date.now() + 240;
+  }, []);
+
+  const setTouchGestureActive = useCallback(
+    (active: boolean) => {
+      isTouchGestureActiveRef.current = active;
+      setIsTouchGestureActive(active);
+      if (active) {
+        blockTouchDrawingBriefly();
+      }
+    },
+    [blockTouchDrawingBriefly],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -56,9 +74,11 @@ export function useCanvasTransform(initialZoom = 1) {
     setPanX(0);
     setPanY(0);
     setIsPanning(false);
+    setTouchGestureActive(false);
+    blockTouchDrawingUntilRef.current = 0;
     gestureStartRef.current = null;
     touchPointersRef.current.clear();
-  }, [initialZoom]);
+  }, [initialZoom, setTouchGestureActive]);
 
   const handleWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>, containerRect: DOMRect) => {
@@ -112,6 +132,7 @@ export function useCanvasTransform(initialZoom = 1) {
             zoom,
           };
           setIsPanning(true);
+          setTouchGestureActive(true);
           event.preventDefault();
           event.stopPropagation();
         }
@@ -127,7 +148,7 @@ export function useCanvasTransform(initialZoom = 1) {
         event.stopPropagation();
       }
     },
-    [isSpacePressed, panX, panY, zoom],
+    [isSpacePressed, panX, panY, setTouchGestureActive, zoom],
   );
 
   const handlePointerMove = useCallback(
@@ -169,6 +190,8 @@ export function useCanvasTransform(initialZoom = 1) {
       if (touchPointersRef.current.size < 2) {
         gestureStartRef.current = null;
         setIsPanning(false);
+        setTouchGestureActive(false);
+        blockTouchDrawingBriefly();
       }
       return;
     }
@@ -181,7 +204,15 @@ export function useCanvasTransform(initialZoom = 1) {
       startPanRef.current = null;
       event.stopPropagation();
     }
-  }, [isPanning]);
+  }, [blockTouchDrawingBriefly, isPanning, setTouchGestureActive]);
+
+  const shouldBlockTouchDrawing = useCallback(() => {
+    return (
+      isTouchGestureActiveRef.current ||
+      touchPointersRef.current.size >= 2 ||
+      Date.now() < blockTouchDrawingUntilRef.current
+    );
+  }, []);
 
   return {
     zoom,
@@ -190,6 +221,8 @@ export function useCanvasTransform(initialZoom = 1) {
     panY,
     isPanning,
     isSpacePressed,
+    isTouchGestureActive,
+    shouldBlockTouchDrawing,
     resetTransform,
     handleWheel,
     handlePointerDown,

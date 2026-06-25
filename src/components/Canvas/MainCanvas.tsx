@@ -14,8 +14,11 @@ type MainCanvasProps = {
 export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const displaySize = 512;
-  const cellSize = displaySize / canvas.width;
+  const maxDisplaySize = 512;
+  const pixelSize = maxDisplaySize / Math.max(canvas.width, canvas.height);
+  const displayWidth = Math.max(1, Math.round(canvas.width * pixelSize));
+  const displayHeight = Math.max(1, Math.round(canvas.height * pixelSize));
+  const isWideCanvas = canvas.width >= canvas.height;
   const [showPreview, setShowPreview] = useState(true);
   const [showOtherLayers, setShowOtherLayers] = useState(true);
 
@@ -28,12 +31,12 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
     }
 
     // Clear the full display viewport area
-    context.clearRect(0, 0, displaySize, displaySize);
+    context.clearRect(0, 0, displayWidth, displayHeight);
 
     // 1. Draw a fixed-size checkerboard behind the artwork.
     const checkerSize = 8;
-    for (let y = 0; y < displaySize; y += checkerSize) {
-      for (let x = 0; x < displaySize; x += checkerSize) {
+    for (let y = 0; y < displayHeight; y += checkerSize) {
+      for (let x = 0; x < displayWidth; x += checkerSize) {
         context.fillStyle = (Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0 ? "#8b8b8b" : "#6f6f6f";
         context.fillRect(x, y, checkerSize, checkerSize);
       }
@@ -47,12 +50,12 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
       const x = index % canvas.width;
       const y = Math.floor(index / canvas.width);
 
-      const startX = Math.floor(x * cellSize);
-      const nextX = Math.floor((x + 1) * cellSize);
+      const startX = Math.floor(x * pixelSize);
+      const nextX = Math.floor((x + 1) * pixelSize);
       const drawWidth = nextX - startX;
 
-      const startY = Math.floor(y * cellSize);
-      const nextY = Math.floor((y + 1) * cellSize);
+      const startY = Math.floor(y * pixelSize);
+      const nextY = Math.floor((y + 1) * pixelSize);
       const drawHeight = nextY - startY;
 
       context.globalAlpha = alpha;
@@ -127,12 +130,12 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
         const x = index % canvas.width;
         const y = Math.floor(index / canvas.width);
 
-        const startX = Math.floor(x * cellSize);
-        const nextX = Math.floor((x + 1) * cellSize);
+        const startX = Math.floor(x * pixelSize);
+        const nextX = Math.floor((x + 1) * pixelSize);
         const drawWidth = nextX - startX;
 
-        const startY = Math.floor(y * cellSize);
-        const nextY = Math.floor((y + 1) * cellSize);
+        const startY = Math.floor(y * pixelSize);
+        const nextY = Math.floor((y + 1) * pixelSize);
         const drawHeight = nextY - startY;
 
         // Draw the onion skin pixel color directly on top with transparency
@@ -144,7 +147,7 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
 
     // Restore globalAlpha to default
     context.globalAlpha = 1.0;
-  }, [canvas.height, canvas.layers, canvas.activeLayerId, canvas.width, cellSize, displaySize, showOtherLayers, onionSkinEnabled, canvas.onionSkinPixels, canvas.frames, canvas.getResolvedCel, canvas.dimInactiveLayers, canvas.activeFrameId]);
+  }, [canvas.height, canvas.layers, canvas.activeLayerId, canvas.width, displayHeight, displayWidth, pixelSize, showOtherLayers, onionSkinEnabled, canvas.onionSkinPixels, canvas.frames, canvas.getResolvedCel, canvas.dimInactiveLayers, canvas.activeFrameId]);
 
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -154,12 +157,92 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
     }
   };
 
-  const isTransforming = transform.isSpacePressed || transform.isPanning;
+  const toTransformEvent = (event: React.PointerEvent<HTMLCanvasElement>) =>
+    event as unknown as React.PointerEvent<HTMLDivElement>;
+
+  const blockCanvasTouchEvent = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType !== "touch") {
+      return false;
+    }
+
+    if (!event.isPrimary) {
+      transform.handlePointerDown(toTransformEvent(event));
+    }
+
+    if (!transform.shouldBlockTouchDrawing()) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    return true;
+  };
+
+  const handleCanvasPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (blockCanvasTouchEvent(event)) {
+      return;
+    }
+
+    canvas.handlePointerDown(event);
+  };
+
+  const handleCanvasPointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === "touch" && transform.shouldBlockTouchDrawing()) {
+      transform.handlePointerMove(toTransformEvent(event));
+      canvas.handlePointerUp(event);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    canvas.handlePointerMove(event);
+  };
+
+  const handleCanvasPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === "touch" && transform.shouldBlockTouchDrawing()) {
+      transform.handlePointerUp(toTransformEvent(event));
+      canvas.handlePointerUp(event);
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    canvas.handlePointerUp(event);
+  };
+
+  const isTransforming = transform.isSpacePressed || transform.isPanning || transform.isTouchGestureActive;
+
+  useEffect(() => {
+    if (canvas.activeTool !== "selection" || !canvas.selectionRect) {
+      return;
+    }
+
+    const handleDocumentPointerDown = (event: globalThis.PointerEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (canvasRef.current?.contains(target)) {
+        return;
+      }
+
+      if (target.closest("[data-selection-toolbar]")) {
+        return;
+      }
+
+      canvas.clearSelection();
+    };
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    return () => document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  }, [canvas]);
 
   return (
     <section
       ref={containerRef}
-      className={`relative min-w-0 flex-1 overflow-hidden bg-zinc-950 select-none ${
+      className={`relative min-w-0 flex-1 touch-none overflow-hidden overscroll-contain bg-zinc-950 select-none ${
         transform.isSpacePressed ? "cursor-grab" : ""
       } ${transform.isPanning ? "cursor-grabbing" : ""}`}
       onWheel={handleWheel}
@@ -222,6 +305,7 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
 
       {canvas.selectionRect ? (
         <div
+          data-selection-toolbar
           className="absolute left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-1 border border-zinc-950 bg-zinc-900/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-[2px]"
           onPointerDown={(event) => event.stopPropagation()}
           onPointerMove={(event) => event.stopPropagation()}
@@ -250,8 +334,12 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
           transformOrigin: "center",
           left: "50%",
           top: "50%",
-          aspectRatio: "1 / 1",
-          width: "min(calc(100% - 24px), calc(100dvh - 260px), 544px)",
+          aspectRatio: `${canvas.width} / ${canvas.height}`,
+          ...(isWideCanvas
+            ? { width: "min(calc(100% - 24px), 544px)" }
+            : { height: "min(calc(100% - 24px), calc(100dvh - 260px), 544px)" }),
+          maxHeight: "calc(100dvh - 260px)",
+          maxWidth: "calc(100% - 24px)",
           minWidth: "160px",
         }}
       >
@@ -315,15 +403,15 @@ export function MainCanvas({ canvas, transform, onionSkinEnabled }: MainCanvasPr
               className={`pixelated relative z-10 h-full w-full touch-none ${
                 isTransforming ? "pointer-events-none" : "cursor-crosshair"
               }`}
-              height={displaySize}
+              height={displayHeight}
               onContextMenu={canvas.handleContextMenu}
-              onPointerCancel={canvas.handlePointerUp}
-              onPointerDown={canvas.handlePointerDown}
+              onPointerCancel={handleCanvasPointerUp}
+              onPointerDown={handleCanvasPointerDown}
               onPointerLeave={canvas.handlePointerLeave}
-              onPointerMove={canvas.handlePointerMove}
-              onPointerUp={canvas.handlePointerUp}
+              onPointerMove={handleCanvasPointerMove}
+              onPointerUp={handleCanvasPointerUp}
               ref={canvasRef}
-              width={displaySize}
+              width={displayWidth}
             />
           </div>
         </div>
