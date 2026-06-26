@@ -81,6 +81,23 @@ const shortcutItems: Array<{ id: ShortcutAction; label: string }> = [
   { id: "brushSizeIncrease", label: "Increase Brush Size" },
 ];
 
+const clampColor = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+
+const toHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((value) => clampColor(value).toString(16).padStart(2, "0")).join("")}`;
+
+const imageDataToPixels = (imageData: ImageData): Pixel[] => {
+  const pixels: Pixel[] = [];
+  const { data } = imageData;
+
+  for (let index = 0; index < data.length; index += 4) {
+    const alpha = data[index + 3];
+    pixels.push(alpha < 10 ? null : toHex(data[index], data[index + 1], data[index + 2]));
+  }
+
+  return pixels;
+};
+
 export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome, onionSkinEnabled, onTogglePreviousFrame }: HeaderMenuProps) {
   const t = copy[language];
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -143,7 +160,6 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<"image-choose" | "single-image" | "spritesheet" | "gif" | null>(null);
   const [importedImgSrc, setImportedImgSrc] = useState<string | null>(null);
-  const [importFitOption, setImportFitOption] = useState<"original" | "fit">("original");
 
   // Spritesheet Import parameters
   const [sheetFrameWidth, setSheetFrameWidth] = useState(32);
@@ -314,7 +330,6 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
     if (!matrix || matrix.frames.length === 0) return;
 
     const encoder = GIFEncoder();
-    encoder.writeHeader();
 
     // Collect all unique colors for the palette
     const colors = new Set<string>();
@@ -480,41 +495,17 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
 
     const img = new Image();
     img.onload = () => {
-      const targetWidth = importFitOption === "original" ? img.width : canvas.width;
-      const targetHeight = importFitOption === "original" ? img.height : canvas.height;
-
       const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = targetWidth;
-      tempCanvas.height = targetHeight;
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
       const ctx = tempCanvas.getContext("2d")!;
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-      const data = imgData.data;
-      const pixelArray: (string | null)[] = [];
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixelArray = imageDataToPixels(imgData);
 
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        if (a < 10) {
-          pixelArray.push(null);
-        } else {
-          const hex = `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
-          pixelArray.push(hex);
-        }
-      }
-
-      // Check option: resize canvas or add to active matrix
-      if (importFitOption === "original") {
-        canvas.importCanvas(pixelArray, targetWidth, targetHeight);
-      } else {
-        // Appends to target active matrix
-        canvas.importFramesToMatrix(canvas.activeMatrixId, [pixelArray]);
-      }
+      canvas.importFramesToMatrix(canvas.activeMatrixId, [pixelArray]);
 
       setIsImportModalOpen(false);
       setImportedFile(null);
@@ -1274,37 +1265,9 @@ export function HeaderMenu({ canvas, language, onLanguageChange, onNavigateHome,
                     <span>Image scale check...</span>
                   </div>
 
-                  <div>
-                    <span className="text-zinc-400 font-semibold block mb-1.5">Import Option</span>
-                    <div className="flex flex-col gap-2">
-                      <label className={`flex items-center gap-2 p-2 border cursor-pointer rounded ${importFitOption === "original" ? "border-amber-300 bg-amber-300/5 text-amber-300" : "border-zinc-950 bg-zinc-800 text-zinc-400"}`}>
-                        <input
-                          type="radio"
-                          name="single-import-opt"
-                          checked={importFitOption === "original"}
-                          onChange={() => setImportFitOption("original")}
-                          className="accent-amber-300"
-                        />
-                        <div>
-                          <div className="font-bold">Resize Canvas to Image</div>
-                          <div className="text-[10px] text-zinc-500">Create new canvas with image dimensions.</div>
-                        </div>
-                      </label>
-
-                      <label className={`flex items-center gap-2 p-2 border cursor-pointer rounded ${importFitOption === "fit" ? "border-amber-300 bg-amber-300/5 text-amber-300" : "border-zinc-950 bg-zinc-800 text-zinc-400"}`}>
-                        <input
-                          type="radio"
-                          name="single-import-opt"
-                          checked={importFitOption === "fit"}
-                          onChange={() => setImportFitOption("fit")}
-                          className="accent-amber-300"
-                        />
-                        <div>
-                          <div className="font-bold">Fit to Current Canvas</div>
-                          <div className="text-[10px] text-zinc-500">Scale to current {canvas.width}x{canvas.height} canvas as new frame.</div>
-                        </div>
-                      </label>
-                    </div>
+                  <div className="rounded border border-zinc-950 bg-zinc-950/60 p-2.5 text-[11px] leading-relaxed text-zinc-400">
+                    <div className="mb-1 font-bold text-amber-300">Fit to Current Canvas</div>
+                    The image will be scaled into a new frame at the current canvas size ({canvas.width}x{canvas.height}).
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-2">
