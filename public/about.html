@@ -17,6 +17,12 @@
     body {
       font-family: 'Inter', system-ui, sans-serif;
     }
+
+    html[lang="en"] [data-lang="ko"],
+    html[lang="ko"] [data-lang="en"],
+    [data-lang][hidden] {
+      display: none !important;
+    }
   </style>
 </head>
 

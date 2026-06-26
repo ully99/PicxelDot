@@ -118,8 +118,27 @@ function EditorApp({
     }
 
     previewSeededRef.current = true;
-    pixelCanvas.importCanvas(createPreviewPixels(), 32, 32);
-    pixelCanvas.setActiveTool("pencil");
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (cancelled) {
+        return;
+      }
+      pixelCanvas.importCanvas(createPixelsFromImage(image, 32, 32), 32, 32);
+      pixelCanvas.setActiveTool("pencil");
+    };
+    image.onerror = () => {
+      if (cancelled) {
+        return;
+      }
+      pixelCanvas.importCanvas(createPreviewPixels(), 32, 32);
+      pixelCanvas.setActiveTool("pencil");
+    };
+    image.src = "/frame_slime.png";
+
+    return () => {
+      cancelled = true;
+    };
   }, [isPreview, pixelCanvas]);
 
   const handleQuickExportPNG = () => {
@@ -828,14 +847,18 @@ function HomePage({
                 <ArrowRight size={15} />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {exampleSprites.map((sprite) => (
-                <div className="border border-zinc-800 bg-zinc-900 p-3" key={sprite.name}>
-                  <AnimatedPixelSprite frames={sprite.frames} />
-                  <div className="mt-2 font-ui text-xs font-bold text-zinc-200">{sprite.name}</div>
-                  <div className="text-[11px] text-zinc-500">{sprite.caption}</div>
-                </div>
-              ))}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[0.78fr_1.22fr]">
+              <ExportShowcaseCard
+                caption={t.gifShowcaseText}
+                image="/Animation2_slime.gif?v=2"
+                squarePreview
+                title={t.gifShowcaseTitle}
+              />
+              <ExportShowcaseCard
+                caption={t.spritesheetShowcaseText}
+                image="/spritesheet_slime.png"
+                title={t.spritesheetShowcaseTitle}
+              />
             </div>
           </div>
         </section>
@@ -966,6 +989,54 @@ function EditorLivePreview({
           <ArrowRight size={15} />
         </button>
       </div>
+    </div>
+  );
+}
+
+function ExportShowcaseCard({
+  caption,
+  image,
+  squarePreview = false,
+  title,
+}: {
+  caption: string;
+  image: string;
+  squarePreview?: boolean;
+  title: string;
+}) {
+  return (
+    <div className="border border-zinc-800 bg-zinc-900 p-3">
+      <div
+        className="grid aspect-[3/1] place-items-center overflow-hidden border border-zinc-950"
+        style={{
+          backgroundColor: "#202124",
+          backgroundImage: "linear-gradient(45deg, #2f3033 25%, transparent 25%), linear-gradient(-45deg, #2f3033 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2f3033 75%), linear-gradient(-45deg, transparent 75%, #2f3033 75%)",
+          backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0",
+          backgroundSize: "16px 16px",
+        }}
+      >
+        {squarePreview ? (
+          <div
+            aria-label={title}
+            className="h-full aspect-square [image-rendering:pixelated]"
+            role="img"
+            style={{
+              backgroundImage: `url("${image}")`,
+              backgroundPosition: "center center",
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "auto 100%",
+            }}
+          />
+        ) : (
+          <img
+            alt={title}
+            className="h-full w-full object-contain [image-rendering:pixelated]"
+            src={image}
+          />
+        )}
+      </div>
+      <div className="mt-3 font-ui text-sm font-black text-zinc-100">{title}</div>
+      <div className="mt-1 text-xs leading-5 text-zinc-500">{caption}</div>
     </div>
   );
 }
@@ -1199,8 +1270,36 @@ function makeFlameFrame(step: number) {
   });
 }
 
+function createPixelsFromImage(image: HTMLImageElement, width: number, height: number): Pixel[] {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return createPreviewPixels();
+  }
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const data = ctx.getImageData(0, 0, width, height).data;
+  return Array.from({ length: width * height }, (_, index): Pixel => {
+    const offset = index * 4;
+    const alpha = data[offset + 3];
+    if (alpha < 10) {
+      return null;
+    }
+
+    const red = data[offset].toString(16).padStart(2, "0");
+    const green = data[offset + 1].toString(16).padStart(2, "0");
+    const blue = data[offset + 2].toString(16).padStart(2, "0");
+    return `#${red}${green}${blue}`;
+  });
+}
+
 function createPreviewPixels() {
-  const pixels = Array.from<Pixel>({ length: 32 * 32 }).fill(null);
+  const pixels: Pixel[] = Array.from({ length: 32 * 32 }, () => null);
   const set = (x: number, y: number, color: Pixel) => {
     if (x >= 0 && x < 32 && y >= 0 && y < 32) {
       pixels[y * 32 + x] = color;
