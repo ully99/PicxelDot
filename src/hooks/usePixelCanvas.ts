@@ -1319,10 +1319,10 @@ const addFrame = useCallback((copyLayerId?: string) => {
     setCopiedFrameData({ cels: celsCopy });
   }, [history, activeMatrixId]);
 
-  const pasteFrame = useCallback(() => {
+  const pasteFrame = useCallback((targetFrameId = activeFrameId) => {
     if (!copiedFrameData || !activeMatrix) return;
 
-    const activeIndex = activeMatrix.frames.findIndex((f) => f.id === activeFrameId);
+    const activeIndex = activeMatrix.frames.findIndex((f) => f.id === targetFrameId);
     const nextId = `frame-${Date.now()}`;
 
     const newCels = activeMatrix.layers.map((layer, idx) => {

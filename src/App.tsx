@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { ColorPalette } from "./components/Panels/ColorPalette";
 import { Toolbar } from "./components/Panels/Toolbar";
-import { ArrowRight, BookOpen, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, Download, Film, Link, LucideIcon, Pencil, Eraser, Minus, Moon, MousePointer2, PaintBucket, Pipette, ShieldCheck, Sparkles, Square, Sun, Trash2, Undo, Redo, Unlink } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, Copy, Download, Film, Link, LucideIcon, Pencil, Eraser, Minus, Moon, MousePointer2, PaintBucket, Pipette, ShieldCheck, Sparkles, Square, Sun, Trash2, Undo, Redo, Unlink } from "lucide-react";
 import { MainCanvas } from "./components/Canvas/MainCanvas";
 import { CanvasPreview } from "./components/Canvas/CanvasPreview";
 import { HeaderMenu } from "./components/Layout/HeaderMenu";
@@ -55,6 +55,7 @@ function EditorApp({
   const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<"tools" | "matrix">("tools");
   const [isMobileControlsCollapsed, setIsMobileControlsCollapsed] = useState(false);
+  const [mobileMatrixScrollTick, setMobileMatrixScrollTick] = useState(0);
   const [isPcPaletteCollapsed, setIsPcPaletteCollapsed] = useState(false);
   const [isPcToolbarCollapsed, setIsPcToolbarCollapsed] = useState(false);
   const [mobileMatrixMenu, setMobileMatrixMenu] = useState<{
@@ -64,6 +65,9 @@ function EditorApp({
     y: number;
   } | null>(null);
   const longPressRef = useRef<number | null>(null);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const mobileMatrixScrollRef = useRef<HTMLDivElement>(null);
+  const mobileMatrixMenuRef = useRef<HTMLDivElement>(null);
   const previewSeededRef = useRef(false);
   const [mobilePaletteColors, setMobilePaletteColors] = useState<string[]>([
     "#000000",
@@ -91,6 +95,22 @@ function EditorApp({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!mobileMatrixMenu) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (mobileMatrixMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setMobileMatrixMenu(null);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, true);
+    return () => window.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [mobileMatrixMenu]);
 
   useEffect(() => {
     if (!isPreview || previewSeededRef.current) {
@@ -138,6 +158,48 @@ function EditorApp({
 
   const activeFrameIndex = pixelCanvas.frames.findIndex((frame) => frame.id === pixelCanvas.activeFrameId);
   const activeLayerIndex = pixelCanvas.layers.findIndex((layer) => layer.id === pixelCanvas.activeLayerId);
+
+  const clearMobileLongPress = () => {
+    if (longPressRef.current !== null) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  const openMobileMatrixMenu = (clientX: number, clientY: number, frameId: string, layerId: string) => {
+    const scrollArea = mobileMatrixScrollRef.current;
+    if (!scrollArea) {
+      setMobileMatrixMenu({ frameId, layerId, x: clientX, y: clientY });
+      return;
+    }
+
+    const rect = scrollArea.getBoundingClientRect();
+    setMobileMatrixMenu({
+      frameId,
+      layerId,
+      x: clientX - rect.left + scrollArea.scrollLeft,
+      y: clientY - rect.top + scrollArea.scrollTop,
+    });
+  };
+
+  const getMobileMatrixMenuViewportPosition = () => {
+    const scrollArea = mobileMatrixScrollRef.current;
+    if (!mobileMatrixMenu || !scrollArea) {
+      return {
+        left: Math.min(mobileMatrixMenu?.x ?? 0, window.innerWidth - 200),
+        top: Math.min(mobileMatrixMenu?.y ?? 0, window.innerHeight - 130),
+      };
+    }
+
+    const rect = scrollArea.getBoundingClientRect();
+    return {
+      left: Math.min(Math.max(6, rect.left + mobileMatrixMenu.x - scrollArea.scrollLeft), window.innerWidth - 200),
+      top: Math.min(Math.max(6, rect.top + mobileMatrixMenu.y - scrollArea.scrollTop), window.innerHeight - 130),
+    };
+  };
+
+  void mobileMatrixScrollTick;
 
   return (
     <div className="app-shell flex h-dvh min-w-0 flex-col overflow-hidden bg-zinc-950 text-zinc-100">
@@ -320,6 +382,23 @@ function EditorApp({
                       })}
                     </div>
                     <button
+                      onClick={() => pixelCanvas.copyFrame(pixelCanvas.activeFrameId)}
+                      className="grid h-7 w-7 shrink-0 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-300 active:bg-zinc-700"
+                      title="Copy current frame"
+                      type="button"
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <button
+                      onClick={() => pixelCanvas.pasteFrame()}
+                      disabled={!pixelCanvas.hasCopiedFrame}
+                      className="grid h-7 w-7 shrink-0 place-items-center border border-zinc-950 bg-zinc-800 text-zinc-300 disabled:opacity-30 active:bg-zinc-700"
+                      title="Paste copied frame"
+                      type="button"
+                    >
+                      <Copy size={12} className="scale-x-[-1]" />
+                    </button>
+                    <button
                       onClick={() => pixelCanvas.addFrame()}
                       className="h-7 shrink-0 border border-zinc-950 bg-zinc-800 px-2 font-ui text-[10px] font-bold text-zinc-300 active:bg-zinc-700"
                       type="button"
@@ -334,7 +413,11 @@ function EditorApp({
                       +L
                     </button>
                   </div>
-                  <div className="max-h-28 overflow-auto border border-zinc-950 bg-zinc-950/60 [touch-action:auto]">
+                  <div
+                    ref={mobileMatrixScrollRef}
+                    className="relative max-h-28 overflow-auto border border-zinc-950 bg-zinc-950/60 [touch-action:auto]"
+                    onScroll={() => setMobileMatrixScrollTick((current) => current + 1)}
+                  >
                     <div
                       className="grid min-w-max font-ui text-[10px]"
                       style={{
@@ -397,27 +480,27 @@ function EditorApp({
                                     pixelCanvas.setActiveFrameId(frame.id);
                                   }}
                                   onPointerDown={(event) => {
-                                    if (longPressRef.current !== null) {
-                                      window.clearTimeout(longPressRef.current);
-                                    }
+                                    if (event.pointerType !== "touch") return;
+                                    clearMobileLongPress();
+                                    longPressStartRef.current = { x: event.clientX, y: event.clientY };
                                     longPressRef.current = window.setTimeout(() => {
-                                      setMobileMatrixMenu({
-                                        frameId: frame.id,
-                                        layerId: layer.id,
-                                        x: event.clientX,
-                                        y: event.clientY,
-                                      });
+                                      openMobileMatrixMenu(event.clientX, event.clientY, frame.id, layer.id);
+                                      longPressRef.current = null;
                                     }, 520);
                                   }}
-                                  onPointerLeave={() => {
-                                    if (longPressRef.current !== null) {
-                                      window.clearTimeout(longPressRef.current);
+                                  onPointerMove={(event) => {
+                                    const start = longPressStartRef.current;
+                                    if (!start) return;
+                                    if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) {
+                                      clearMobileLongPress();
                                     }
                                   }}
-                                  onPointerUp={() => {
-                                    if (longPressRef.current !== null) {
-                                      window.clearTimeout(longPressRef.current);
-                                    }
+                                  onPointerLeave={clearMobileLongPress}
+                                  onPointerUp={clearMobileLongPress}
+                                  onPointerCancel={clearMobileLongPress}
+                                  onContextMenu={(event) => {
+                                    event.preventDefault();
+                                    openMobileMatrixMenu(event.clientX, event.clientY, frame.id, layer.id);
                                   }}
                                   type="button"
                                 >
@@ -592,11 +675,9 @@ function EditorApp({
       )}
       {mobileMatrixMenu && (
         <div
+          ref={mobileMatrixMenuRef}
           className="fixed z-[80] w-48 border border-zinc-950 bg-zinc-900 py-1 font-ui text-[11px] text-zinc-100 shadow-[0_8px_24px_rgba(0,0,0,0.6)] md:hidden"
-          style={{
-            left: Math.min(mobileMatrixMenu.x, window.innerWidth - 200),
-            top: Math.min(mobileMatrixMenu.y, window.innerHeight - 130),
-          }}
+          style={getMobileMatrixMenuViewportPosition()}
         >
           {pixelCanvas.frames.findIndex((frame) => frame.id === mobileMatrixMenu.frameId) > 0 && (
             <button

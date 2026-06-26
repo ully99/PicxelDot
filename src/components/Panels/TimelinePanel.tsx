@@ -44,11 +44,16 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
   // Custom Cel Context Menu State
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
+    type: "cel" | "frame";
     x: number;
     y: number;
     frameId: string;
-    layerId: string;
+    layerId?: string;
   } | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
 
   // Tag Modal states
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -78,13 +83,62 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
     setEditingLayerId(null);
   };
 
-  // Close context menu on external click
-  useEffect(() => {
-    const handleClose = () => setContextMenu(null);
-    if (contextMenu?.visible) {
-      window.addEventListener("click", handleClose);
+  const getMenuPosition = (clientX: number, clientY: number) => {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) {
+      return { x: clientX, y: clientY };
     }
-    return () => window.removeEventListener("click", handleClose);
+
+    const rect = scrollArea.getBoundingClientRect();
+    return {
+      x: clientX - rect.left + scrollArea.scrollLeft,
+      y: clientY - rect.top + scrollArea.scrollTop,
+    };
+  };
+
+  const openCelMenu = (clientX: number, clientY: number, frameId: string, layerId: string) => {
+    const position = getMenuPosition(clientX, clientY);
+    setContextMenu({
+      visible: true,
+      type: "cel",
+      x: position.x,
+      y: position.y,
+      frameId,
+      layerId,
+    });
+  };
+
+  const openFrameMenu = (clientX: number, clientY: number, frameId: string) => {
+    const position = getMenuPosition(clientX, clientY);
+    setContextMenu({
+      visible: true,
+      type: "frame",
+      x: position.x,
+      y: position.y,
+      frameId,
+    });
+  };
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  // Close context menu on external click/tap.
+  useEffect(() => {
+    const handleClose = (event: PointerEvent) => {
+      if (contextMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setContextMenu(null);
+    };
+    if (contextMenu?.visible) {
+      window.addEventListener("pointerdown", handleClose, true);
+    }
+    return () => window.removeEventListener("pointerdown", handleClose, true);
   }, [contextMenu]);
 
   useEffect(() => {
@@ -446,7 +500,7 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
         </div>
 
         {/* B. Right Side: Scrollable Frames Headers & Cels Grid */}
-        <div className="flex-1 overflow-auto flex flex-col min-h-0 scrollbar-thin">
+        <div ref={scrollAreaRef} className="relative flex-1 overflow-auto flex flex-col min-h-0 scrollbar-thin">
           
           {/* Tag Blocks Row */}
           <div className="h-6 shrink-0 border-b border-zinc-950 bg-zinc-950/60 relative flex items-center min-w-max select-none" style={{ height: "24px" }}>
@@ -512,6 +566,27 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
                     canvas.setActiveFrameId(frame.id);
                     canvas.setIsPlaying(false);
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    openFrameMenu(e.clientX, e.clientY, frame.id);
+                  }}
+                  onPointerDown={(e) => {
+                    if (e.pointerType !== "touch") return;
+                    longPressStartRef.current = { x: e.clientX, y: e.clientY };
+                    longPressTimerRef.current = window.setTimeout(() => {
+                      openFrameMenu(e.clientX, e.clientY, frame.id);
+                      longPressTimerRef.current = null;
+                    }, 450);
+                  }}
+                  onPointerMove={(e) => {
+                    const start = longPressStartRef.current;
+                    if (!start) return;
+                    if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) {
+                      clearLongPress();
+                    }
+                  }}
+                  onPointerUp={clearLongPress}
+                  onPointerCancel={clearLongPress}
                   className={`w-9 h-full flex items-center justify-center font-pixel text-[10px] border-r border-zinc-950 shrink-0 select-none transition-colors cursor-move ${
                     isSelected
                       ? "bg-amber-300/10 border-b-2 border-b-amber-300 text-amber-300 font-bold"
@@ -564,14 +639,25 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
                         }}
                         onContextMenu={(e) => {
                           e.preventDefault();
-                          setContextMenu({
-                            visible: true,
-                            x: e.clientX,
-                            y: e.clientY,
-                            frameId: frame.id,
-                            layerId: layer.id,
-                          });
+                          openCelMenu(e.clientX, e.clientY, frame.id, layer.id);
                         }}
+                        onPointerDown={(e) => {
+                          if (e.pointerType !== "touch") return;
+                          longPressStartRef.current = { x: e.clientX, y: e.clientY };
+                          longPressTimerRef.current = window.setTimeout(() => {
+                            openCelMenu(e.clientX, e.clientY, frame.id, layer.id);
+                            longPressTimerRef.current = null;
+                          }, 450);
+                        }}
+                        onPointerMove={(e) => {
+                          const start = longPressStartRef.current;
+                          if (!start) return;
+                          if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) {
+                            clearLongPress();
+                          }
+                        }}
+                        onPointerUp={clearLongPress}
+                        onPointerCancel={clearLongPress}
                         className={`w-9 h-full flex items-center justify-center border-r border-zinc-950/10 shrink-0 transition-all focus:outline-none relative ${
                           isCelSelected
                             ? "bg-amber-300/15"
@@ -654,60 +740,92 @@ export function TimelinePanel({ canvas, onionSkinEnabled, onTogglePreviousFrame 
             })}
           </div>
 
+          {contextMenu?.visible && (
+            <div
+              ref={contextMenuRef}
+              className="absolute z-50 w-48 border border-zinc-950 bg-zinc-900 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.6)] text-zinc-100 font-ui text-[11px]"
+              style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+            >
+              {contextMenu.type === "frame" ? (
+                <>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5"
+                    onClick={() => {
+                      canvas.copyFrame(contextMenu.frameId);
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Copy size={11} />
+                    <span>Copy Frame</span>
+                  </button>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+                    disabled={!canvas.hasCopiedFrame}
+                    onClick={() => {
+                      canvas.pasteFrame(contextMenu.frameId);
+                      setContextMenu(null);
+                    }}
+                  >
+                    <Copy size={11} className="scale-x-[-1]" />
+                    <span>Paste After Frame</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {canvas.frames.findIndex((f) => f.id === contextMenu.frameId) > 0 && contextMenu.layerId && (
+                    <button
+                      className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5"
+                      onClick={() => {
+                        canvas.linkCelToPrevious(contextMenu.frameId, contextMenu.layerId!);
+                        setContextMenu(null);
+                      }}
+                    >
+                      <Link size={11} className="text-blue-400" />
+                      <span>Link to Previous Frame</span>
+                    </button>
+                  )}
+
+                  {(() => {
+                    const frame = canvas.frames.find((f) => f.id === contextMenu.frameId);
+                    const cel = frame?.cels.find((c) => c.layerId === contextMenu.layerId);
+                    const isLinked = !!cel?.linkedToFrameId;
+                    if (isLinked && contextMenu.layerId) {
+                      return (
+                        <button
+                          className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5"
+                          onClick={() => {
+                            canvas.unlinkCel(contextMenu.frameId, contextMenu.layerId!);
+                            setContextMenu(null);
+                          }}
+                        >
+                          <Unlink size={11} className="text-red-400" />
+                          <span>Unlink Cel (Make Copy)</span>
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {contextMenu.layerId && (
+                    <button
+                      className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 text-red-400 flex items-center gap-1.5"
+                      onClick={() => {
+                        canvas.clearCel(contextMenu.frameId, contextMenu.layerId!);
+                        setContextMenu(null);
+                      }}
+                    >
+                      <Trash2 size={11} />
+                      <span>Clear Cel</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
         </div>
 
       </div>
-      )}
-
-      {/* 3. Custom Cel Context Menu */}
-      {contextMenu?.visible && (
-        <div
-          className="fixed z-50 w-48 border border-zinc-950 bg-zinc-900 py-1 shadow-[0_8px_24px_rgba(0,0,0,0.6)] text-zinc-100 font-ui text-[11px]"
-          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-          onClick={() => setContextMenu(null)}
-        >
-          {canvas.frames.findIndex((f) => f.id === contextMenu.frameId) > 0 && (
-            <button
-              className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5"
-              onClick={() => {
-                canvas.linkCelToPrevious(contextMenu.frameId, contextMenu.layerId);
-              }}
-            >
-              <Link size={11} className="text-blue-400" />
-              <span>Link to Previous Frame</span>
-            </button>
-          )}
-
-          {(() => {
-            const frame = canvas.frames.find((f) => f.id === contextMenu.frameId);
-            const cel = frame?.cels.find((c) => c.layerId === contextMenu.layerId);
-            const isLinked = !!cel?.linkedToFrameId;
-            if (isLinked) {
-              return (
-                <button
-                  className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 hover:text-white flex items-center gap-1.5"
-                  onClick={() => {
-                    canvas.unlinkCel(contextMenu.frameId, contextMenu.layerId);
-                  }}
-                >
-                  <Unlink size={11} className="text-red-400" />
-                  <span>Unlink Cel (Make Copy)</span>
-                </button>
-              );
-            }
-            return null;
-          })()}
-
-          <button
-            className="w-full px-3 py-1.5 text-left hover:bg-zinc-700 text-red-400 flex items-center gap-1.5"
-            onClick={() => {
-              canvas.clearCel(contextMenu.frameId, contextMenu.layerId);
-            }}
-          >
-            <Trash2 size={11} />
-            <span>Clear Cel</span>
-          </button>
-        </div>
       )}
 
       {/* 4. Frame Tag Dialog Modal */}
